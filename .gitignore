@@ -1,0 +1,39 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE and workspace
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local model/cache artifacts
+.hf_cache/
+checkpoints/
+outputs/
+runs/
+*.pt
+*.bin
+*.safetensors
+
+# Logs
+*.log
+
+# Local datasets and large raw files
+data/
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
