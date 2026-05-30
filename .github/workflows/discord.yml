@@ -1,0 +1,56 @@
+name: Discord Notification
+
+on:
+  push:
+    branches:
+      - "**"
+
+  pull_request:
+    branches:
+      - dev
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord Notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          PUSH_COMMIT_URL: ${{ github.event.head_commit.url }}
+
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+
+        run: |
+          if [ "$EVENT_NAME" = "push" ]; then
+            MESSAGE="📌 Push 발생
+          브랜치: $GITHUB_REF_NAME
+          커밋 메시지: $PUSH_COMMIT_MSG
+          URL: $PUSH_COMMIT_URL"
+          else
+            MESSAGE="🔀 PR 발생
+          작성자: $PR_USER
+          브랜치: $PR_HEAD → $PR_BASE
+          제목: $PR_TITLE
+          URL: $PR_URL"
+          fi
+
+          PAYLOAD=$(jq -n --arg msg "$MESSAGE" '{content: $msg}')
+
+          curl -s -H "Content-Type: application/json" \
+               -X POST \
+               -d "$PAYLOAD" \
+               "$DISCORD_WEBHOOK_URL"
