@@ -1,5 +1,6 @@
 ---
 name: "🐞 버그 이슈"
+about: "버그를 보고할 때 사용하는 템플릿입니다."
 title: "[Bug] "
 labels: bug
 ---

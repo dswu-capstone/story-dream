@@ -1,5 +1,6 @@
 ---
 name: "⚡ 긴급 수정 이슈"
+about: "배포 후 긴급히 수정이 필요한 버그를 보고할 때 사용하는 템플릿입니다."
 title: "[Hotfix] "
 labels: bug, urgent
 ---

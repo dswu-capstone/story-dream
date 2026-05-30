@@ -1,5 +1,6 @@
 ---
 name: "📝 문서/디자인 이슈"
+about: "문서 작성이나 디자인 요청 시 사용하는 템플릿입니다."
 title: "[Doc/Design] "
 labels: documentations
 ---

@@ -1,5 +1,6 @@
 ---
 name: "✨ 새 기능 이슈"
+about: "새로운 기능을 제안할 때 사용하는 템플릿입니다."
 title: "[Feat] "
 labels: enhancement
 ---
