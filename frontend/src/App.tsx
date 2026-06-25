@@ -1,9 +1,11 @@
+import { StrictMode } from 'react'
+import StartPage from './pages/StartPage/startPage.tsx';
+
 function App() {
   return (
-    <main>
-      <h1>StoryDream</h1>
-      <p>프론트엔드 프로젝트가 정상적으로 실행되었습니다.</p>
-    </main>
+    <StrictMode>
+      <StartPage />
+    </StrictMode>
   );
 }
 
