@@ -1,11 +1,10 @@
-import { StrictMode } from 'react'
-import StartPage from './pages/StartPage/startPage.tsx';
+import StartPage from "./pages/StartPage/startPage";
 
 function App() {
   return (
-    <StrictMode>
+    <div className="app">
       <StartPage />
-    </StrictMode>
+    </div>
   );
 }
 

@@ -1,0 +1,106 @@
+.start-page {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: var(--color-yellow-light);
+  overflow: hidden;
+}
+
+.start-menu {
+  position: absolute;
+  top: 140px;
+  left: 205px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+
+  z-index: 2;
+}
+
+.menu-button {
+  width: 305px;
+  height: 128px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+
+  border: none;
+  border-radius: 22px;
+  box-shadow: var(--shadow-button);
+
+  font-size: 26px;
+  font-weight: 500;
+  color: #000;
+
+  cursor: pointer;
+}
+
+.reading-button {
+  background-color: var(--color-blue-light);
+}
+
+.guardian-button {
+  background-color: var(--color-pink-light);
+}
+
+.menu-icon {
+  width: 42px;
+  height: 42px;
+}
+
+.menu-arrow {
+  font-size: 26px;
+}
+
+.reading-button .menu-arrow {
+  color: var(--color-blue);
+}
+
+.guardian-button .menu-arrow {
+  color: var(--color-pink);
+}
+
+.speech-container {
+  position: absolute;
+  top: 110px;
+  right: 145px;
+  width: 280px;
+}
+
+.speech-container img {
+  width: 100%;
+  display: block;
+}
+
+.speech-bubble {
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, .15));
+}
+
+.speech-text {
+  position: absolute;
+  top: 55px;
+  left: 55px;
+
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.character {
+  position: absolute;
+  right: 40px;
+  bottom: 70px;
+  width: 190px;
+  z-index: 2;
+}
+
+.background-hills {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 1;
+}
