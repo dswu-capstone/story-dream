@@ -3,8 +3,9 @@
 =========================== */
 :root {
   /* Colors */
-  --color-yellow: #FFD35A;
-  --color-yellow-light: #FDFFED;
+  --color-primary: #FCC219;
+  --color-primary-light: #FCC219;
+  --color-background: #FDFFED;
 
   --color-blue: #17A6E4;
   --color-blue-light: #E2F7FE;
@@ -12,8 +13,9 @@
   --color-pink: #E98FCB;
   --color-pink-light: #FBF6FD;
 
-  --color-gray: #808080;
-  --color-gray-light: #D3D3D3;
+  --color-gray-dark: #808080;
+  --color-gray: #D3D3D3;
+  --color-gray-light: #E9E9E9;
 
   /* Shadow */
   --shadow-button: 0px 1px 3px rgba(0, 0, 0, 0.08);
@@ -43,7 +45,7 @@ body,
 
 body {
   font-family: Pretendard, sans-serif;
-  background-color: var(--color-yellow-light);
+  background-color: var(--color-background);
 
   display: flex;
   justify-content: center;
@@ -57,5 +59,5 @@ body {
   position: relative;
   overflow: hidden;
 
-  background-color: var(--color-yellow-light);
+  background-color: var(--color-background);
 }
