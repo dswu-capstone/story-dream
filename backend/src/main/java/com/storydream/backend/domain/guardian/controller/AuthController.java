@@ -32,7 +32,7 @@ public class AuthController {
     }
 
     @GetMapping("/guardians/me")
-    public ResponseEntity<ApiResponse<GuardianResponse>> getMe(@AuthenticationPrincipal Long guardianId) {
+    public ResponseEntity<ApiResponse<GuardianResponse>> getMe(@AuthenticationPrincipal Integer guardianId) {
         return ResponseEntity.ok(ApiResponse.success(authService.getMe(guardianId)));
     }
 }

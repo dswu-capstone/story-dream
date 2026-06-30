@@ -48,7 +48,7 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public GuardianResponse getMe(Long guardianId) {
+    public GuardianResponse getMe(Integer guardianId) {
         Guardian guardian = guardianRepository.findById(guardianId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GUARDIAN_NOT_FOUND));
         return GuardianResponse.from(guardian);

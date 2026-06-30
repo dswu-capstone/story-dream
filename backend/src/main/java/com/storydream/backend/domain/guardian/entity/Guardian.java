@@ -20,7 +20,7 @@ public class Guardian {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // SERIAL 대응
-    private Long id;
+    private Integer id;
 
     @Column(name = "login_id", unique = true, nullable = false)
     private String loginId;
