@@ -1,9 +1,9 @@
-import StartPage from "./pages/StartPage/startPage";
+import ProfileSelectPage from "./pages/ProfileSelectPage/profileSelectPage";
 
 function App() {
   return (
     <div className="app">
-      <StartPage />
+      <ProfileSelectPage />
     </div>
   );
 }

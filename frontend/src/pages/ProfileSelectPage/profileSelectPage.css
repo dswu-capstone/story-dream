@@ -1,0 +1,73 @@
+.profile-select-page {
+  width: 100%;
+  height: 100%;
+  background: var(--color-yellow-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 76px 32px 32px;
+}
+
+.profile-select-page__title {
+  margin-top: 8px;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #111;
+  text-align: center;
+}
+
+.profile-select-page__empty {
+  margin-top: 140px;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-gray);
+}
+
+.profile-select-page__carousel {
+  width: 100%;
+  margin-top: 38px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  column-gap: 14px;
+}
+
+.profile-select-page__arrow {
+  width: 48px;
+  height: 48px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.profile-select-page__arrow img {
+  width: 22px;
+  height: 22px;
+}
+
+.profile-select-page__list {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+}
+
+.profile-select-page__pagination {
+  margin-top: 42px;
+  display: flex;
+  gap: 18px;
+}
+
+.profile-select-page__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #d8d8d8;
+}
+
+.profile-select-page__dot--active {
+  background: #ffbd16;
+}
