@@ -152,3 +152,11 @@
 .login-cloud-right {
   right: 0;
 }
+
+.login-error-message {
+  width: 100%;
+  color: red;
+  font-size: 14px;
+  margin: -8px 0 0 0;
+  text-align: center;
+}
