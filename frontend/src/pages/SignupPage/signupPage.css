@@ -105,3 +105,12 @@
 .signup-cloud-right {
   right: 0;
 }
+
+.signup-error-message {
+  width: 100%;
+  margin-top: -8px;
+
+  color: red;
+  font-size: 14px;
+  text-align: center;
+}

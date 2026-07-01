@@ -17,14 +17,18 @@ function SignupPage() {
   const [password, setPassword] = useState("");
   const [passwordCheck, setPasswordCheck] = useState("");
 
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleSignup = async () => {
+    setErrorMessage("");
+
     if (!name || !loginIdValue || !password || !passwordCheck) {
-      alert("모든 항목을 입력해주세요.");
+      setErrorMessage("모든 항목을 입력해주세요.");
       return;
     }
 
     if (password !== passwordCheck) {
-      alert("비밀번호가 일치하지 않습니다.");
+      setErrorMessage("비밀번호가 일치하지 않습니다.");
       return;
     }
 
@@ -56,19 +60,19 @@ function SignupPage() {
       }
 
       if (response.status === 409) {
-        alert("이미 사용 중인 아이디입니다.");
+        setErrorMessage("이미 사용 중인 아이디입니다.");
         return;
       }
 
       if (response.status === 400) {
-        alert(result.message || "입력값을 확인해주세요.");
+        setErrorMessage(result.message || "입력값을 확인해주세요.");
         return;
       }
 
-      alert(result.message || "회원가입에 실패했습니다.");
+      setErrorMessage(result.message || "회원가입에 실패했습니다.");
     } catch (error) {
       console.error(error);
-      alert("서버와 연결할 수 없습니다.");
+      setErrorMessage("서버와 연결할 수 없습니다.");
     }
   };
 
@@ -116,7 +120,6 @@ function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-
           <div className="signup-input-wrapper">
             <img src={loginPassword} alt="" className="signup-input-icon" />
             <input
@@ -127,6 +130,10 @@ function SignupPage() {
               onChange={(e) => setPasswordCheck(e.target.value)}
             />
           </div>
+
+          {errorMessage && (
+            <p className="signup-error-message">{errorMessage}</p>
+          )}
 
           <button className="signup-button" type="submit">
             회원가입
