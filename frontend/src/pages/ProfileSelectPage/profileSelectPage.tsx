@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import "./profileSelectPage.css";
 
 import { getProfiles } from "../../api/profile";
-import leftArrowIcon from "../../assets/left.svg";
-import rightArrowIcon from "../../assets/right.svg";
+import ArrowButton from "../../components/ArrowButton/arrowButton";
 import Logo from "../../components/Logo/logo";
 import ProfileCard from "../../components/ProfileCard/profileCard";
 import type { Profile } from "../../types/profile";
@@ -71,14 +70,11 @@ function ProfileSelectPage() {
       <h1 className="profile-select-page__title">{pageTitle}</h1>
 
       <section className="profile-select-page__carousel">
-        <button
-          type="button"
-          className="profile-select-page__arrow"
+        <ArrowButton
+          direction="left"
           onClick={handlePrev}
-          aria-label={prevButtonLabel}
-        >
-          <img src={leftArrowIcon} alt="" aria-hidden="true" />
-        </button>
+          ariaLabel={prevButtonLabel}
+        />
 
         <div className="profile-select-page__list">
           {visibleProfiles.map((profile) => (
@@ -86,14 +82,11 @@ function ProfileSelectPage() {
           ))}
         </div>
 
-        <button
-          type="button"
-          className="profile-select-page__arrow"
+        <ArrowButton
+          direction="right"
           onClick={handleNext}
-          aria-label={nextButtonLabel}
-        >
-          <img src={rightArrowIcon} alt="" aria-hidden="true" />
-        </button>
+          ariaLabel={nextButtonLabel}
+        />
       </section>
 
       <div
