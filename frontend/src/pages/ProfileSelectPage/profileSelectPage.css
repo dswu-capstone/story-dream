@@ -33,22 +33,6 @@
   column-gap: 14px;
 }
 
-.profile-select-page__arrow {
-  width: 48px;
-  height: 48px;
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.profile-select-page__arrow img {
-  width: 22px;
-  height: 22px;
-}
-
 .profile-select-page__list {
   display: flex;
   justify-content: center;
