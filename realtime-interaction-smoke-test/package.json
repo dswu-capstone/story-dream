@@ -1,0 +1,9 @@
+{
+  "name": "realtime-voice-interaction-smoke-test",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal browser-based smoke test for character voice interactions with the OpenAI Realtime API.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
