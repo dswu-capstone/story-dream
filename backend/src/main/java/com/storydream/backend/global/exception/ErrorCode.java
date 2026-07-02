@@ -19,8 +19,9 @@ public enum ErrorCode {
     STORY_LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 버전의 동화를 찾을 수 없습니다."),
 
 
-    CHILD_NOT_FOUND(HttpStatus.NOT_FOUND,"자녀 정보를 찾을 수 없습니다.");
+    CHILD_NOT_FOUND(HttpStatus.NOT_FOUND,"자녀 정보를 찾을 수 없습니다."),
 
+    READING_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다.");
     private final HttpStatus status;
     private final String message;
 }
