@@ -59,4 +59,14 @@ public class ReadingHistory {
         this.createdAt = now;
         this.updatedAt = now;
     }
+
+    public void end() {
+        if (this.status == ReadingStatus.COMPLETED) {
+            return;
+        }
+
+        this.endedAt = LocalDateTime.now();
+        this.status = ReadingStatus.COMPLETED;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

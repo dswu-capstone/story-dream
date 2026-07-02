@@ -9,4 +9,9 @@ public interface ReadingService {
             Integer guardianId,
             ReadingStartRequest request
     );
+
+    void endReading(
+            Integer guardianId,
+            Integer readingHistoryId
+    );
 }

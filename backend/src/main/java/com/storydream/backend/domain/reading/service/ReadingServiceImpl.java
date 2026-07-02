@@ -47,4 +47,20 @@ public class ReadingServiceImpl implements ReadingService {
 
         return new ReadingStartResponse(savedReadingHistory.getId());
     }
+
+    @Override
+    @Transactional
+    public void endReading(
+            Integer guardianId,
+            Integer readingHistoryId
+    ) {
+        ReadingHistory readingHistory = readingHistoryRepository.findById(readingHistoryId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND));
+
+        if (!readingHistory.getChild().getGuardian().getId().equals(guardianId)) {
+            throw new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND);
+        }
+
+        readingHistory.end();
+    }
 }

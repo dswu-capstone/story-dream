@@ -59,4 +59,34 @@ public class ReadingController {
                         )
                 );
     }
+
+    @Operation(
+            summary = "동화 읽기 종료",
+            description = """
+                진행 중인 동화 읽기 기록을 종료합니다.
+                
+                - readingHistoryId : 종료할 독서 기록 ID
+                
+                종료 시 endedAt이 저장되고 상태가 COMPLETED로 변경됩니다.
+                """
+    )
+    @PatchMapping("/{readingHistoryId}/end")
+    public ResponseEntity<ApiResponse<Void>> endReading(
+            Authentication authentication,
+
+            @Parameter(description = "종료할 독서 기록 ID", example = "15")
+            @PathVariable Integer readingHistoryId
+    ) {
+        Integer guardianId = Integer.valueOf(authentication.getName());
+
+        readingService.endReading(
+                guardianId,
+                readingHistoryId
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(null)
+        );
+    }
+
 }
