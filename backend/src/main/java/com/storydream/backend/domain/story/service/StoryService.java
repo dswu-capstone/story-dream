@@ -1,5 +1,6 @@
 package com.storydream.backend.domain.story.service;
 
+import com.storydream.backend.domain.story.dto.StoryDetailResponse;
 import com.storydream.backend.domain.story.dto.StoryRecommendationResponse;
 
 public interface StoryService {
@@ -8,5 +9,9 @@ public interface StoryService {
             String languageCode,
             Integer page,
             Integer size
+    );
+    StoryDetailResponse getStoryDetail(
+            Integer originalStoryId,
+            Integer level
     );
 }
