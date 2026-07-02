@@ -1,15 +1,13 @@
 package com.storydream.backend.domain.story.controller;
 
+import com.storydream.backend.domain.story.dto.StoryDetailResponse;
 import com.storydream.backend.domain.story.dto.StoryRecommendationResponse;
 import com.storydream.backend.domain.story.service.StoryServiceImpl;
 import com.storydream.backend.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,7 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Story", description = "동화 관련 API")
 public class StoryController {
 
-    final StoryServiceImpl storyService;
+    private final StoryServiceImpl storyService;
     @Operation(
             summary = "추천 동화 목록 조회",
             description = """
@@ -53,6 +51,30 @@ public class StoryController {
                 )
         );
 
+    }
+
+    @Operation(
+            summary = "동화 상세 조회",
+            description = """
+                선택한 동화의 특정 난이도(level)에 해당하는 상세 내용을 조회합니다.
+
+                - originalStoryId : 조회할 원본 동화 ID
+                - level : 조회할 동화 난이도
+                """
+    )
+    @GetMapping("/{originalStoryId}")
+    public ResponseEntity<ApiResponse<StoryDetailResponse>> getStoryDetail(
+            @Parameter(description = "조회할 원본 동화 ID", example = "1")
+            @PathVariable Integer originalStoryId,
+
+            @Parameter(description = "조회할 동화 난이도", example = "1")
+            @RequestParam Integer level
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        storyService.getStoryDetail(originalStoryId, level)
+                )
+        );
     }
 
 }
