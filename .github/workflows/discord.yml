@@ -47,7 +47,8 @@ jobs:
           브랜치: $PR_HEAD → $PR_BASE
           제목: $PR_TITLE
           URL: $PR_URL"
-
+          fi 
+          
           PAYLOAD=$(jq -n --arg msg "$MESSAGE" '{content: $msg}')
 
           curl -s -H "Content-Type: application/json" \
