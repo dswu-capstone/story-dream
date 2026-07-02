@@ -16,8 +16,10 @@ public enum ErrorCode {
 
     INVALID_STORY_LEVEL(HttpStatus.BAD_REQUEST, "잘못된 동화 난이도입니다."),
     STORY_NOT_FOUND(HttpStatus.NOT_FOUND, "동화를 찾을 수 없습니다."),
-    STORY_LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 버전의 동화를 찾을 수 없습니다.");
+    STORY_LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 버전의 동화를 찾을 수 없습니다."),
 
+
+    CHILD_NOT_FOUND(HttpStatus.NOT_FOUND,"자녀 정보를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;
