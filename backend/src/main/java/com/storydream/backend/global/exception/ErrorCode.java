@@ -21,7 +21,11 @@ public enum ErrorCode {
 
     CHILD_NOT_FOUND(HttpStatus.NOT_FOUND,"자녀 정보를 찾을 수 없습니다."),
 
-    READING_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다.");
+    READING_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다."),
+
+    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 문단의 퀴즈를 찾을 수 없습니다."),
+    INVALID_PART_TYPE(HttpStatus.BAD_REQUEST, "문단 타입은 서론, 본론, 결론 중 하나여야 합니다.");
+
     private final HttpStatus status;
     private final String message;
 }
