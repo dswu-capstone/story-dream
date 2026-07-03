@@ -4,7 +4,7 @@ package com.storydream.backend.domain.quiz.entity;
 import com.storydream.backend.domain.story.entity.OriginalStory;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode; // 타입 명시(타입 인식 못함 방지)
+import org.hibernate.annotations.JdbcTypeCode; // 타입 명시
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
