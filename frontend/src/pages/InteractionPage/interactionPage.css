@@ -16,7 +16,7 @@
   position: relative;
   width: 820px;
   height: 392px;
-  margin: 58px auto 0;
+  margin: 56px auto 0;
   border-radius: 20px;
   background: #fffccf;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
@@ -30,7 +30,7 @@
 }
 
 .interaction-page__title {
-  max-width: 520px;
+  max-width: 560px;
   font-size: 32px;
   font-weight: 500;
   line-height: 1.35;
@@ -67,7 +67,7 @@
 
 .interaction-page__character {
   position: absolute;
-  right: -28px;
-  bottom: -78px;
-  width: 252px;
+  right: -6px;
+  bottom: -20px;
+  width: 205px;
 }
