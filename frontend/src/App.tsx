@@ -12,7 +12,10 @@ function App() {
       <Routes>
         <Route path="/" element={<StartPage />} />
         <Route path="/children/select" element={<ProfileSelectPage />} />
-        <Route path="/children/level-adjust" element={<InteractionPage />} />
+        <Route
+          path="/children/level-adjust/:variant"
+          element={<InteractionPage />}
+        />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
       </Routes>
