@@ -1,0 +1,97 @@
+.child-management-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--color-yellow-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 76px 32px 32px;
+}
+
+.child-management-page__title {
+  margin-top: 8px;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #111;
+  text-align: center;
+}
+
+.child-management-page__empty {
+  margin-top: 140px;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-gray);
+}
+
+.child-management-page__carousel {
+  width: 100%;
+  margin-top: 38px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  column-gap: 14px;
+}
+
+.child-management-page__viewport {
+  width: 100%;
+  overflow: hidden;
+}
+
+.child-management-page__list {
+  display: flex;
+  width: 100%;
+  transition: transform 0.7s ease;
+}
+
+.child-management-page__slide {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 36px;
+}
+
+.child-management-page__card {
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.child-management-page__pagination {
+  margin-top: 42px;
+  display: flex;
+  gap: 18px;
+}
+
+.child-management-page__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #d8d8d8;
+}
+
+.child-management-page__dot--active {
+  background: #ffbd16;
+}
+
+.child-management-page__add-button {
+  position: absolute;
+  right: 78px;
+  bottom: 48px;
+
+  width: 180px;
+  height: 64px;
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 16px;
+  background: #efc23f;
+  color: #111;
+
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
