@@ -52,13 +52,21 @@ function ChildManagementPage() {
 
   const [children, setChildren] = useState<Child[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const totalPages = Math.ceil(children.length / cardsPerPage);
 
   useEffect(() => {
     const loadChildren = async () => {
-      const data = await getChildren();
-      setChildren(data);
+      try {
+        const data = await getChildren();
+        setChildren(data);
+      } catch (error) {
+        console.error("아동 목록 조회 오류:", error);
+        alert("아동 목록을 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     void loadChildren();
@@ -97,10 +105,19 @@ function ChildManagementPage() {
     navigate(`/guardian/children/${childId}`);
   };
 
-  const visibleChildren = children.slice(
-    currentPage * cardsPerPage,
-    currentPage * cardsPerPage + cardsPerPage,
-  );
+  if (isLoading) {
+    return (
+      <main className="child-management-page">
+        <Logo />
+
+        <h1 className="child-management-page__title">{pageTitle}</h1>
+
+        <p className="child-management-page__empty">
+          불러오는 중...
+        </p>
+      </main>
+    );
+  }
 
   if (children.length === 0) {
     return (
