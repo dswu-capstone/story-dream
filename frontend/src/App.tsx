@@ -5,6 +5,7 @@ import InteractionPage from "./pages/InteractionPage/interactionPage";
 import LoginPage from "./pages/LoginPage/loginPage";
 import ProfileSelectPage from "./pages/ProfileSelectPage/profileSelectPage";
 import SignupPage from "./pages/SignupPage/signupPage";
+import ChildManagementPage from "./pages/ChildManagementPage/childManagementPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
+        <Route path="/guardian/children" element={<ChildManagementPage />} />
       </Routes>
     </BrowserRouter>
   );
