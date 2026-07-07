@@ -10,6 +10,7 @@ import ChildManagementPage from "./pages/ChildManagementPage/ChildManagementPage
 import ChildCreatePage from "./pages/ChildCreatePage/childCreatePage";
 import ChildEditPage from "./pages/ChildEditPage/childEditPage";
 import StoryRecommendPage from "./pages/StoryRecommendPage/storyRecommendPage";
+import StoryReadingPage from "./pages/StoryReadingPage/storyReadingPage";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           element={<ReadingCompletePage />}
         />
         <Route path="/stories/recommend" element={<StoryRecommendPage />} />
+        <Route path="/stories/read" element={<StoryReadingPage />} />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
         <Route path="/guardian/children" element={<ChildManagementPage />} />
