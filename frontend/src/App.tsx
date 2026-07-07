@@ -4,6 +4,7 @@ import StartPage from "./pages/StartPage/startPage";
 import InteractionPage from "./pages/InteractionPage/interactionPage";
 import LoginPage from "./pages/LoginPage/loginPage";
 import ProfileSelectPage from "./pages/ProfileSelectPage/profileSelectPage";
+import ReadingCompletePage from "./pages/ReadingCompletePage/readingCompletePage";
 import SignupPage from "./pages/SignupPage/signupPage";
 import ChildManagementPage from "./pages/ChildManagementPage/childManagementPage";
 import ChildCreatePage from "./pages/ChildCreatePage/childCreatePage";
@@ -18,6 +19,10 @@ function App() {
         <Route
           path="/children/level-adjust/:variant"
           element={<InteractionPage />}
+        />
+        <Route
+          path="/stories/complete"
+          element={<ReadingCompletePage />}
         />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
