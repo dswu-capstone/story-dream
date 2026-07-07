@@ -84,7 +84,7 @@ function StoryRecommendPage() {
   };
 
   const handleStoryClick = (storyId: number) => {
-    navigate(`/stories/${storyId}`);
+    navigate(`/stories/read?storyId=${storyId}&level=1`);
   };
 
   return (
