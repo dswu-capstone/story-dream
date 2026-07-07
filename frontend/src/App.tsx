@@ -6,9 +6,10 @@ import LoginPage from "./pages/LoginPage/loginPage";
 import ProfileSelectPage from "./pages/ProfileSelectPage/profileSelectPage";
 import ReadingCompletePage from "./pages/ReadingCompletePage/readingCompletePage";
 import SignupPage from "./pages/SignupPage/signupPage";
-import ChildManagementPage from "./pages/ChildManagementPage/childManagementPage";
+import ChildManagementPage from "./pages/ChildManagementPage/ChildManagementPage";
 import ChildCreatePage from "./pages/ChildCreatePage/childCreatePage";
 import ChildEditPage from "./pages/ChildEditPage/childEditPage";
+import StoryRecommendPage from "./pages/StoryRecommendPage/storyRecommendPage";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           path="/stories/complete"
           element={<ReadingCompletePage />}
         />
+        <Route path="/stories/recommend" element={<StoryRecommendPage />} />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
         <Route path="/guardian/children" element={<ChildManagementPage />} />

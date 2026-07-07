@@ -39,6 +39,13 @@
   gap: 36px;
 }
 
+.profile-select-page__card-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
 .profile-select-page__pagination {
   margin-top: 42px;
   display: flex;

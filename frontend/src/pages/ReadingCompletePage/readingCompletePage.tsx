@@ -3,8 +3,8 @@ import "./readingCompletePage.css";
 import readingCompleteDecor from "../../assets/Group 5.svg";
 import Logo from "../../components/Logo/logo";
 
-const completionMessage = "\uCC45\uC744 \uB05D\uAE4C\uC9C0 \uC77D\uC5C8\uB124!\n\uB300\uB2E8\uD558\uB2E4!";
-const finishLabel = "\uC885\uB8CC\uD558\uAE30";
+const completionMessage = "책을 끝까지 읽었네!\n대단하다!";
+const finishLabel = "종료하기";
 
 function ReadingCompletePage() {
   return (
