@@ -8,16 +8,14 @@ import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar
 
 const levelAdjustContent = {
   easier: {
-    question:
-      "\uC870\uAE08 \uB354 \uC26C\uC6B4 \uAE00\uB85C \uC77D\uC5B4\uBCFC\uAE4C?",
-    decline: "\uC544\uB2C8\uC694,\n\uC774\uB300\uB85C \uD560\uB798\uC694",
-    accept: "\uB124,\n\uC88B\uC544\uC694",
+    question: "조금 더 쉬운 글로 읽어볼까?",
+    decline: "아니요,\n이대로 할래요",
+    accept: "네,\n좋아요",
   },
   harder: {
-    question:
-      "\uC870\uAE08 \uB354 \uC5B4\uB824\uC6B4 \uAE00\uB85C \uC77D\uC5B4\uBCFC\uAE4C?",
-    decline: "\uC544\uB2C8\uC694,\n\uC774\uB300\uB85C \uD560\uB798\uC694",
-    accept: "\uB124,\n\uC88B\uC544\uC694",
+    question: "조금 더 어려운 글로 읽어볼까?",
+    decline: "아니요,\n이대로 할래요",
+    accept: "네,\n좋아요",
   },
 } as const;
 

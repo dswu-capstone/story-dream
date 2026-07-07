@@ -1,12 +1,40 @@
 import type { Profile } from "../types/profile";
 
-const mockProfiles: Profile[] = [
-  { id: 1, name: "\uAE40\uBBFC\uC900" },
-  { id: 2, name: "\uBC15\uC11C\uC5F0" },
-  { id: 3, name: "\uC774\uC9C0\uD638" },
-];
+type Child = {
+  childId: number;
+  name: string;
+};
+
+type ChildrenResponse = {
+  success: boolean;
+  data: {
+    children: Child[];
+  };
+  message: string | null;
+};
 
 export async function getProfiles(): Promise<Profile[]> {
-  // Temporary mock response. Replace with a real fetch call when the backend API is ready.
-  return Promise.resolve(mockProfiles);
+  const accessToken = localStorage.getItem("accessToken");
+
+  if (!accessToken) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const response = await fetch("/api/children", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("프로필 목록 조회 실패");
+  }
+
+  const result: ChildrenResponse = await response.json();
+
+  return result.data.children.map((child) => ({
+    id: child.childId,
+    name: child.name,
+  }));
 }
