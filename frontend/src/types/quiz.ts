@@ -3,4 +3,6 @@ export type Quiz = {
   question: string;
   type: string;
   choices: string[];
+  correctAnswer?: string;
+  explanation?: string;
 };

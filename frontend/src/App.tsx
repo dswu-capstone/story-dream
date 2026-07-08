@@ -10,6 +10,7 @@ import ChildManagementPage from "./pages/ChildManagementPage/ChildManagementPage
 import ChildCreatePage from "./pages/ChildCreatePage/childCreatePage";
 import ChildEditPage from "./pages/ChildEditPage/childEditPage";
 import StoryRecommendPage from "./pages/StoryRecommendPage/storyRecommendPage";
+import StoryResultPage from "./pages/StoryResultPage/storyResultPage";
 import StoryReadingPage from "./pages/StoryReadingPage/storyReadingPage";
 import StoryQuizPage from "./pages/StoryQuizPage/storyQuizPage";
 
@@ -28,6 +29,7 @@ function App() {
           element={<ReadingCompletePage />}
         />
         <Route path="/stories/quiz" element={<StoryQuizPage />} />
+        <Route path="/stories/result" element={<StoryResultPage />} />
         <Route path="/stories/recommend" element={<StoryRecommendPage />} />
         <Route path="/stories/read" element={<StoryReadingPage />} />
         <Route path="/guardian/login" element={<LoginPage />} />
