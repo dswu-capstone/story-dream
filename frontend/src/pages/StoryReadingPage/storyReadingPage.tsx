@@ -18,6 +18,7 @@ function StoryReadingPage() {
   const [searchParams] = useSearchParams();
   const storyIdParam = Number(searchParams.get("storyId") ?? 1);
   const levelParam = Number(searchParams.get("level") ?? 1);
+  const partIndexParam = Number(searchParams.get("partIndex") ?? 0);
   const resolvedStoryId = storyIdParam;
 
   const [storyDetail, setStoryDetail] = useState<StoryDetail | null>(null);
@@ -43,8 +44,17 @@ function StoryReadingPage() {
   }, [levelParam, resolvedStoryId]);
 
   useEffect(() => {
-    setCurrentPartIndex(0);
-  }, [storyDetail?.originalStoryId]);
+    if (!storyDetail) {
+      return;
+    }
+
+    const safeIndex = Math.min(
+      Math.max(partIndexParam, 0),
+      Math.max(storyDetail.parts.length - 1, 0),
+    );
+
+    setCurrentPartIndex(safeIndex);
+  }, [partIndexParam, storyDetail]);
 
   const parts = storyDetail?.parts ?? [];
   const currentPart = parts[currentPartIndex];
@@ -52,16 +62,26 @@ function StoryReadingPage() {
   const currentStep = Math.min(currentPartIndex + 1, totalSteps);
 
   const handlePrev = () => {
-    setCurrentPartIndex((prev) => Math.max(prev - 1, 0));
+    const previousIndex = Math.max(currentPartIndex - 1, 0);
+    navigate(
+      `/stories/read?storyId=${resolvedStoryId}&level=${levelParam}&partIndex=${previousIndex}`,
+    );
   };
 
   const handleNext = () => {
-    if (currentPartIndex >= parts.length - 1) {
-      navigate("/stories/complete");
+    if (!currentPart) {
       return;
     }
 
-    setCurrentPartIndex((prev) => prev + 1);
+    const quizParams = new URLSearchParams({
+      storyId: String(resolvedStoryId),
+      level: String(levelParam),
+      partIndex: String(currentPartIndex),
+      partType: currentPart.type,
+      totalParts: String(parts.length),
+    });
+
+    navigate(`/stories/quiz?${quizParams.toString()}`);
   };
 
   return (
