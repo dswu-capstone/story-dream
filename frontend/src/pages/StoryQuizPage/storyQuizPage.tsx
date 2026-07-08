@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyQuizPage.css";
 
@@ -15,12 +15,16 @@ const optionIcons = [optionOneIcon, optionTwoIcon];
 
 function StoryQuizPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const storyId = Number(searchParams.get("storyId") ?? 1);
   const level = Number(searchParams.get("level") ?? 1);
   const partIndex = Number(searchParams.get("partIndex") ?? 0);
   const totalParts = Number(searchParams.get("totalParts") ?? 1);
   const partType = searchParams.get("partType") ?? "서론";
+  const startQuizIndex = (
+    location.state as { startQuizIndex?: number } | null
+  )?.startQuizIndex;
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
@@ -54,9 +58,9 @@ function StoryQuizPage() {
   }, [partType, storyId]);
 
   useEffect(() => {
-    setCurrentQuizIndex(0);
+    setCurrentQuizIndex(startQuizIndex ?? 0);
     setSelectedAnswer("");
-  }, [partType]);
+  }, [partType, startQuizIndex]);
 
   useEffect(() => {
     setSelectedAnswer("");
@@ -72,25 +76,38 @@ function StoryQuizPage() {
       return;
     }
 
+    let quizResult = {
+      isCorrect: selectedAnswer === currentQuiz.correctAnswer,
+      correctAnswer: currentQuiz.correctAnswer ?? selectedAnswer,
+    };
+
     try {
-      await submitQuiz(currentQuiz.quizId, selectedAnswer);
+      quizResult = await submitQuiz(
+        currentQuiz.quizId,
+        selectedAnswer,
+        currentQuiz.correctAnswer,
+      );
     } catch (error) {
       console.error("퀴즈 제출 오류:", error);
     }
 
-    if (currentQuizIndex < quizzes.length - 1) {
-      setCurrentQuizIndex((prev) => prev + 1);
-      return;
-    }
-
-    if (partIndex >= totalParts - 1) {
-      navigate("/stories/complete");
-      return;
-    }
-
-    navigate(
-      `/stories/read?storyId=${storyId}&level=${level}&partIndex=${partIndex + 1}`,
-    );
+    navigate("/stories/result", {
+      state: {
+        storyId,
+        level,
+        partIndex,
+        totalParts,
+        partType,
+        quizIndex: currentQuizIndex,
+        totalQuizzes: quizzes.length,
+        selectedAnswer,
+        isCorrect: quizResult.isCorrect,
+        correctAnswer: quizResult.correctAnswer,
+        explanation:
+          currentQuiz.explanation ??
+          `정답은 ${quizResult.correctAnswer}예요.`,
+      },
+    });
   };
 
   return (
