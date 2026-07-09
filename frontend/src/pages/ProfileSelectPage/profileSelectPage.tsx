@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import "./profileSelectPage.css";
 
@@ -8,25 +9,30 @@ import Logo from "../../components/Logo/logo";
 import ProfileCard from "../../components/ProfileCard/profileCard";
 import type { Profile } from "../../types/profile";
 
-const pageTitle =
-  "\uB3C5\uC11C\uB97C \uC2DC\uC791\uD560 \uD504\uB85C\uD544\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694";
-const prevButtonLabel =
-  "\uC774\uC804 \uD504\uB85C\uD544 \uBCF4\uAE30";
-const nextButtonLabel =
-  "\uB2E4\uC74C \uD504\uB85C\uD544 \uBCF4\uAE30";
-const paginationLabel =
-  "\uD504\uB85C\uD544 \uC704\uCE58";
-const emptyMessage =
-  "\uB4F1\uB85D\uB41C \uD504\uB85C\uD544\uC774 \uC544\uC9C1 \uC5C6\uC5B4\uC694.";
+const pageTitle = "독서를 시작할 프로필을 선택해주세요";
+const prevButtonLabel = "이전 프로필 보기";
+const nextButtonLabel = "다음 프로필 보기";
+const paginationLabel = "프로필 위치";
+const emptyMessage = "등록된 프로필이 아직 없어요.";
 
 function ProfileSelectPage() {
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const loadProfiles = async () => {
-      const data = await getProfiles();
-      setProfiles(data);
+      try {
+        const data = await getProfiles();
+        setProfiles(data);
+      } catch (error) {
+        console.error("프로필 목록 조회 오류:", error);
+        setErrorMessage("프로필 목록을 불러오지 못했어요.");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     void loadProfiles();
@@ -40,6 +46,26 @@ function ProfileSelectPage() {
 
     setActiveIndex((prev) => prev % profiles.length);
   }, [profiles]);
+
+  if (isLoading) {
+    return (
+      <main className="profile-select-page">
+        <Logo />
+        <h1 className="profile-select-page__title">{pageTitle}</h1>
+        <p className="profile-select-page__empty">불러오는 중...</p>
+      </main>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <main className="profile-select-page">
+        <Logo />
+        <h1 className="profile-select-page__title">{pageTitle}</h1>
+        <p className="profile-select-page__empty">{errorMessage}</p>
+      </main>
+    );
+  }
 
   if (profiles.length === 0) {
     return (
@@ -63,6 +89,14 @@ function ProfileSelectPage() {
     setActiveIndex((prev) => (prev + 1) % profiles.length);
   };
 
+  const handleProfileSelect = (profile: Profile) => {
+    localStorage.setItem("selectedChildId", String(profile.id));
+    localStorage.setItem("selectedChildName", profile.name);
+    navigate(
+      `/stories/recommend?childId=${profile.id}&name=${encodeURIComponent(profile.name)}`,
+    );
+  };
+
   return (
     <main className="profile-select-page">
       <Logo />
@@ -78,7 +112,14 @@ function ProfileSelectPage() {
 
         <div className="profile-select-page__list">
           {visibleProfiles.map((profile) => (
-            <ProfileCard key={profile.id} profile={profile} />
+            <button
+              key={profile.id}
+              type="button"
+              className="profile-select-page__card-button"
+              onClick={() => handleProfileSelect(profile)}
+            >
+              <ProfileCard profile={profile} />
+            </button>
           ))}
         </div>
 
