@@ -12,7 +12,7 @@
         <p class="eyebrow">Realtime Voice Smoke Test</p>
         <h1>Character Voice Interaction Smoke Test</h1>
         <p class="lede">
-          질문 음성 생성, 아이 음성 감지, 자동 응답, 무응답 fallback까지 한 화면에서 확인합니다.
+          질문 생성, 아이 답변 인식, 정답 판정, 3턴 마무리까지 브라우저에서 먼저 확인합니다.
         </p>
         <div class="actions">
           <button id="connectButton">1. 세션 연결</button>
@@ -29,9 +29,30 @@
           <label>아이 이름 <input id="childName" /></label>
           <label>캐릭터 이름 <input id="characterName" /></label>
           <label>현재 문단 <textarea id="paragraph" rows="7"></textarea></label>
-          <p class="eyebrow">화법은 항상 3인칭 질문으로 고정됩니다.</p>
+          <p id="storySource" class="eyebrow">Story source: mock story</p>
+          <div class="actions compact">
+            <button id="previousPartButton" class="ghost" type="button">이전 문단</button>
+            <button id="nextPartButton" class="ghost" type="button">다음 문단</button>
+          </div>
         </div>
 
+        <div class="panel">
+          <h2>백엔드 연동</h2>
+          <label>Backend base URL <input id="backendBaseUrl" placeholder="http://localhost:8080" /></label>
+          <label>Bearer token <input id="backendToken" type="password" placeholder="Bearer 없이 토큰만 입력" /></label>
+          <label>Story ID <input id="backendStoryId" type="number" min="1" step="1" /></label>
+          <label>Level <input id="backendLevel" type="number" min="1" max="3" step="1" /></label>
+          <label>Child ID <input id="backendChildId" type="number" min="1" step="1" /></label>
+          <div class="actions compact">
+            <button id="loadStoryButton" type="button">실제 동화 불러오기</button>
+            <button id="startReadingButton" class="ghost" type="button">읽기 세션 시작</button>
+            <button id="endReadingButton" class="ghost" type="button">읽기 세션 종료</button>
+          </div>
+          <p id="readingSession" class="eyebrow">Reading session: not started</p>
+        </div>
+      </section>
+
+      <section class="grid">
         <div class="panel">
           <h2>VAD / 음성 설정</h2>
           <label>모델 <input id="model" /></label>
@@ -41,14 +62,15 @@
           <label>silence_duration_ms <input id="silenceDurationMs" type="number" min="100" step="100" /></label>
           <label>무응답 timeout(ms) <input id="noResponseTimeoutMs" type="number" min="1000" step="500" /></label>
         </div>
+
+        <div class="panel">
+          <h2>현재 상태</h2>
+          <ul id="statusList" class="statusList"></ul>
+        </div>
       </section>
 
       <section class="grid">
-        <div class="panel">
-          <h2>실시간 상태</h2>
-          <ul id="statusList" class="statusList"></ul>
-        </div>
-        <div class="panel">
+        <div class="panel panel--full">
           <h2>이벤트 로그</h2>
           <pre id="log" class="log"></pre>
         </div>
