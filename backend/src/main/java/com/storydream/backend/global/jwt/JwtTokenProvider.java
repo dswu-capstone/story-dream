@@ -23,7 +23,7 @@ public class JwtTokenProvider {
         this.validityMs = validityMs;
     }
 
-    public String createToken(Long guardianId, String loginId) {
+    public String createToken(Integer guardianId, String loginId) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(String.valueOf(guardianId))
@@ -34,10 +34,10 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public Long getGuardianId(String token) {
+    public Integer getGuardianId(String token) {
         Claims claims = Jwts.parser().verifyWith(key).build()
                 .parseSignedClaims(token).getPayload();
-        return Long.valueOf(claims.getSubject());
+        return Integer.valueOf(claims.getSubject());
     }
 
     public boolean validateToken(String token) {
