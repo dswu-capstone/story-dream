@@ -1,0 +1,23 @@
+.story-progress-bar {
+  width: 360px;
+}
+
+.story-progress-bar__track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: #d8d8d8;
+}
+
+.story-progress-bar__fill {
+  height: 100%;
+  background: var(--color-blue);
+}
+
+.story-progress-bar__flag {
+  position: absolute;
+  top: -28px;
+  width: 26px;
+  height: 34px;
+  transform: translateX(-12%);
+}
