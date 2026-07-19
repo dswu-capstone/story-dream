@@ -24,7 +24,11 @@ public enum ErrorCode {
     READING_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다."),
 
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
-    INVALID_PART_TYPE(HttpStatus.BAD_REQUEST, "문단 타입은 서론, 본론, 결론 중 하나여야 합니다.");
+    INVALID_PART_TYPE(HttpStatus.BAD_REQUEST, "문단 타입은 서론, 본론, 결론 중 하나여야 합니다."),
+
+    READING_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "아직 완료되지 않은 독서입니다."),
+    INVALID_PERIOD(HttpStatus.BAD_REQUEST, "조회 기간이 올바르지 않습니다."),
+    REPORT_NOT_READY(HttpStatus.ACCEPTED, "리포트를 생성하고 있어요. 잠시 후 다시 시도해 주세요.");
     private final HttpStatus status;
     private final String message;
 }

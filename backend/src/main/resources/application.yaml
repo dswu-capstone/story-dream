@@ -23,3 +23,7 @@ story:
   dataset:
     generator-type: FINE_TUNED
     version: v1
+
+ai:
+  base-url: ${AI_BASE_URL:http://localhost:8000}
+  read-timeout-seconds: 20
