@@ -2,10 +2,6 @@ package com.storydream.backend.domain.report.service;
 
 import org.springframework.stereotype.Component;
 
-/**
- * AI 서버가 죽어도 보호자 화면에는 뭔가 보여야 한다.
- * GPT 호출이 실패하면 집계 숫자만으로 문장을 만들어 대신 저장한다. (ai_generated = false)
- */
 @Component
 public class FallbackSummaryWriter {
 

@@ -41,17 +41,11 @@ public class ReportServiceImpl implements ReportService {
     private final ChildPeriodReportRepository periodReportRepository;
     private final ChildRepository childRepository;
 
-    // =================================================================
-    // 리포트 생성 (독서 완료 시 1회)
-    //   집계(읽기 TX) → AI 호출(TX 밖) → 저장(쓰기 TX)
-    //   이 메서드에는 @Transactional을 붙이지 않는다. GPT 응답을 기다리는 동안
-    //   DB 커넥션을 잡고 있지 않기 위해서다.
-    // =================================================================
     @Override
     public void generateStoryReport(Integer readingHistoryId) {
 
         if (reportRepository.existsByReadingHistoryId(readingHistoryId)) {
-            return; // 멱등 : 이미 만들어진 리포트는 다시 만들지 않는다
+            return;
         }
 
         ReportFacts facts = collector.collectStory(readingHistoryId);
@@ -65,9 +59,7 @@ public class ReportServiceImpl implements ReportService {
         writer.saveStoryReport(facts, summary, aiGenerated);
     }
 
-    // =================================================================
-    // 화면3 : 동화 1권 리포트
-    // =================================================================
+    // 동화 1권 리포트
     @Override
     @Transactional(readOnly = true)
     public StoryReportResponse getStoryReport(Integer guardianId, Integer readingHistoryId) {
@@ -112,9 +104,7 @@ public class ReportServiceImpl implements ReportService {
         );
     }
 
-    // =================================================================
-    // 사이드바 : 독서 이력 목록
-    // =================================================================
+    // 독서 이력 목록
     @Override
     @Transactional(readOnly = true)
     public ReadingHistoryListResponse getReadingHistories(
@@ -131,11 +121,7 @@ public class ReportServiceImpl implements ReportService {
         return new ReadingHistoryListResponse(facts.histories());
     }
 
-    // =================================================================
-    // 화면2 : 전체 독서 요약
-    //   주차별 꺾은선은 매번 집계(가볍다).
-    //   AI 종합 분석만 (아이 + 기간) 단위로 캐시한다(비싸다).
-    // =================================================================
+    // 전체 독서 요약
     @Override
     public PeriodSummaryResponse getPeriodSummary(
             Integer guardianId,
@@ -173,7 +159,6 @@ public class ReportServiceImpl implements ReportService {
         );
     }
 
-    /** 기간 내 완독 수가 그대로면 GPT를 다시 부르지 않는다. */
     private String resolvePeriodSummary(
             Child child,
             LocalDate from,

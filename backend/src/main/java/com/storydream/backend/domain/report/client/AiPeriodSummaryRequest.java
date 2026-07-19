@@ -5,7 +5,6 @@ import com.storydream.backend.domain.report.service.PeriodFacts;
 import java.time.LocalDate;
 import java.util.List;
 
-/** "전체 독서 요약"(기간) AI 종합 분석 요청 */
 public record AiPeriodSummaryRequest(
         String childName,
         Integer childAge,

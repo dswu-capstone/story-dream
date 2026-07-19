@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/** 화면2 "전체 요약" 탭의 AI 종합 분석 캐시. (아이 + 기간) 단위. */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -78,7 +77,6 @@ public class ChildPeriodReport {
         this.updatedAt = now;
     }
 
-    /** 기간 내 완독 수가 그대로면 GPT를 다시 부르지 않고 캐시된 요약을 쓴다. */
     public boolean isFresh(int currentReadingCount) {
         return this.readingCount == currentReadingCount;
     }

@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/** 쓰기 트랜잭션 전용 (AI 호출이 끝난 뒤에만 열린다) */
 @Component
 @RequiredArgsConstructor
 public class ReportWriter {
@@ -31,7 +30,6 @@ public class ReportWriter {
     @Transactional
     public void saveStoryReport(ReportFacts facts, String aiSummary, boolean aiGenerated) {
 
-        // 비동기 처리 중 중복 생성 방지
         if (reportRepository.existsByReadingHistoryId(facts.readingHistoryId())) {
             return;
         }

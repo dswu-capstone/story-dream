@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/** 서론/본론/결론 단위 스냅샷. 화면3의 두 그래프(평균 정답률, 난이도 변화)가 이걸로 그려진다. */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

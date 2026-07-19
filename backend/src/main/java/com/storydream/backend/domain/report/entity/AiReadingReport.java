@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 동화 1회 독서(reading_history) = 리포트 1개 */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -54,7 +53,6 @@ public class AiReadingReport {
     @Column(name = "ai_summary", nullable = false, columnDefinition = "TEXT")
     private String aiSummary;
 
-    /** false면 AI 호출 실패로 규칙 기반 문구가 들어간 리포트 */
     @Column(name = "ai_generated", nullable = false)
     private Boolean aiGenerated;
 

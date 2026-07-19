@@ -4,7 +4,6 @@ import com.storydream.backend.domain.report.service.ReportFacts;
 
 import java.util.List;
 
-/** AI 서버(FastAPI)로 보내는 "동화 1권 리포트" 요약 요청. 문장이 아니라 '집계된 사실'만 보낸다. */
 public record AiStorySummaryRequest(
         String childName,
         Integer childAge,

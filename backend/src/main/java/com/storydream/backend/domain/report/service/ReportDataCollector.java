@@ -27,14 +27,6 @@ import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-/**
- * DB에서 리포트 재료를 모아 '순수 값(record)'으로 바꿔주는 컴포넌트.
- *
- * AI(GPT) 호출은 수 초가 걸리므로 트랜잭션 안에서 하면 DB 커넥션을 그만큼 잡고 있게 된다.
- * 그래서 [집계(읽기 TX)] → [AI 호출(TX 밖)] → [저장(쓰기 TX)] 으로 나누고,
- * 이 클래스는 첫 단계만 담당한다. 엔티티를 그대로 넘기면 트랜잭션 밖에서 지연 로딩이 터지므로
- * 반드시 record로 변환해서 반환한다.
- */
 @Component
 @RequiredArgsConstructor
 public class ReportDataCollector {
@@ -44,9 +36,7 @@ public class ReportDataCollector {
     private final QuizResultRepository quizResultRepository;
     private final AiReadingReportRepository reportRepository;
 
-    // =================================================================
     // 동화 1회 독서 집계
-    // =================================================================
     @Transactional(readOnly = true)
     public ReportFacts collectStory(Integer readingHistoryId) {
 
@@ -59,7 +49,7 @@ public class ReportDataCollector {
 
         Child child = history.getChild();
 
-        // 1) 문단별 퀴즈 집계 (같은 퀴즈를 다시 제출했으면 마지막 제출만 인정)
+        // 문단별 퀴즈 집계
         Map<Integer, QuizResult> latestResultByQuiz = new LinkedHashMap<>();
         for (QuizResult result : quizResultRepository.findAllWithQuizByReadingHistoryId(readingHistoryId)) {
             latestResultByQuiz.put(result.getQuiz().getId(), result);
@@ -75,21 +65,21 @@ public class ReportDataCollector {
             }
         }
 
-        // 2) 문단별 난이도 (reading_log의 문단별 마지막 기록 = 그 문단을 읽을 때의 레벨)
+        // 문단별 난이도
         Map<PartType, Integer> levelByPart = new EnumMap<>(PartType.class);
         for (ReadingLog log : readingLogRepository.findByReadingHistoryIdOrderByIdAsc(readingHistoryId)) {
             levelByPart.put(PartType.from(log.getPartType()), log.getLevel());
         }
 
-        // 3) 문단별 이탈 횟수 (focus_loss_log 테이블이 생기기 전까지는 비어 있음)
+        // 문단별 이탈 횟수
         Map<PartType, Integer> focusLossByPart = focusLossCounts(readingHistoryId);
 
-        // 4) 서론 → 본론 → 결론 순으로 정리
+        // 서론 → 본론 → 결론 순으로
         List<PartFact> parts = new ArrayList<>();
-        int fallbackLevel = child.getDefaultLevel(); // 로그가 없으면 아이의 기본 레벨로 대체
+        int fallbackLevel = child.getDefaultLevel();
         for (PartType partType : PartType.values()) {
             if (!quizCountByPart.containsKey(partType) && !levelByPart.containsKey(partType)) {
-                continue; // 아예 읽지 않은 문단
+                continue;
             }
             int[] counts = quizCountByPart.getOrDefault(partType, new int[2]);
             int level = levelByPart.getOrDefault(partType, fallbackLevel);
@@ -129,9 +119,7 @@ public class ReportDataCollector {
         );
     }
 
-    // =================================================================
-    // 기간(전체 요약) 집계
-    // =================================================================
+    // 전체 요약 집계
     @Transactional(readOnly = true)
     public PeriodFacts collectPeriod(Integer childId, LocalDate from, LocalDate to) {
 
@@ -139,10 +127,9 @@ public class ReportDataCollector {
                 childId,
                 ReadingStatus.COMPLETED,
                 from.atStartOfDay(),
-                to.plusDays(1).atStartOfDay()   // to 당일 23:59:59까지 포함
+                to.plusDays(1).atStartOfDay()
         );
 
-        // 사이드바 목록
         List<ReadingHistoryItemResponse> histories = reports.stream()
                 .sorted(Comparator.comparing(
                         (AiReadingReport r) -> r.getReadingHistory().getEndedAt()).reversed())
@@ -158,7 +145,6 @@ public class ReportDataCollector {
                 })
                 .toList();
 
-        // 주차 버킷 : 화면이 5/1~5/7, 5/8~5/14 로 끊으므로 '조회 시작일 기준 7일'로 나눈다
         int bucketCount = (int) Math.ceil((ChronoUnit.DAYS.between(from, to) + 1) / 7.0);
         BigDecimal[] weeklySum = new BigDecimal[bucketCount];
         int[] weeklyCount = new int[bucketCount];
@@ -196,7 +182,6 @@ public class ReportDataCollector {
                 ? BigDecimal.ZERO.setScale(1, RoundingMode.HALF_UP)
                 : totalScore.divide(BigDecimal.valueOf(readingCount), 1, RoundingMode.HALF_UP);
 
-        // 프롬프트용 부가 정보
         Integer latestLevel = reports.stream()
                 .filter(report -> report.getEndLevel() != null)
                 .reduce((first, second) -> second)   // 마지막 독서
@@ -220,15 +205,6 @@ public class ReportDataCollector {
         );
     }
 
-    // =================================================================
-    // 보조
-    // =================================================================
-
-    /**
-     * 문단별 화면 이탈 횟수.
-     * focus_loss_log 테이블이 생기면 여기서 조회해 반환하면 되고,
-     * 리포트 저장/프롬프트/화면 코드는 손댈 필요가 없다.
-     */
     private Map<PartType, Integer> focusLossCounts(Integer readingHistoryId) {
         return Map.of();
     }
@@ -249,7 +225,6 @@ public class ReportDataCollector {
         return Period.between(child.getBirthDate(), LocalDate.now()).getYears();
     }
 
-    /** 0 ~ 100 (소수 1자리). 분모가 0이면 0.0 */
     private BigDecimal percentage(int part, int total) {
         if (total == 0) {
             return BigDecimal.ZERO.setScale(1, RoundingMode.HALF_UP);

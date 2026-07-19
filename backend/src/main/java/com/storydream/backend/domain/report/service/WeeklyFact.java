@@ -7,7 +7,7 @@ public record WeeklyFact(
         int weekIndex,
         LocalDate weekStart,
         LocalDate weekEnd,
-        BigDecimal averageQuizScore,  // 기록 없으면 null
+        BigDecimal averageQuizScore,
         int readingCount
 ) {
 }

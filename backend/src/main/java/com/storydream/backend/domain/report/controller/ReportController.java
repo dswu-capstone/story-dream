@@ -18,12 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 /**
- * AI 독서 리포트 API (보호자용)
- *
- * 화면1 : 아이 목록은 기존 GET /api/children 을 그대로 쓴다.
- * 화면2 : GET /api/reports/children/{childId}/summary
- *         GET /api/reports/children/{childId}/histories
- * 화면3 : GET /api/reports/reading-histories/{readingHistoryId}
+ * AI 독서 리포트 API
  */
 @RestController
 @RequiredArgsConstructor

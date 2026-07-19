@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/** 화면3 : "토끼와 거북이 리포트" */
 public record StoryReportResponse(
         Integer readingHistoryId,
         Integer childId,
@@ -17,7 +16,7 @@ public record StoryReportResponse(
         Integer startLevel,
         Integer endLevel,
         Integer focusLossCount,
-        List<ReportPartResponse> parts,   // 항상 서론 → 본론 → 결론 순
+        List<ReportPartResponse> parts,
         String aiSummary
 ) {
 }
