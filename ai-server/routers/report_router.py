@@ -18,16 +18,13 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/api/ai/reports", tags=["reports"])
 
 MODEL = "gpt-4o-mini"
-
-# 모듈을 import 하는 시점이 아니라, 실제로 처음 호출될 때 만든다.
-# (import 순서 때문에 .env 가 아직 안 읽힌 상태에서 키를 못 찾는 사고를 막는다)
 _client: Optional[OpenAI] = None
 
 
 def _get_client() -> OpenAI:
     global _client
     if _client is None:
-        _client = OpenAI()   # 환경변수 OPENAI_API_KEY 를 자동으로 읽는다
+        _client = OpenAI()
     return _client
 
 
@@ -42,8 +39,6 @@ SYSTEM_PROMPT = """당신은 5~7세 아동의 독서 기록을 보호자에게 �
 - 숫자를 나열하지 말고 흐름(올라감/내려감/유지)을 중심으로 설명합니다.
 - 마크다운, 목록, 이모지를 쓰지 않고 평문으로만 작성합니다."""
 
-
-# ------------------------------------------------------------------ schema
 class StoryPart(BaseModel):
     partType: str                       # 서론 / 본론 / 결론
     level: int                          # 1 ~ 3
@@ -85,8 +80,6 @@ class PeriodSummaryRequest(BaseModel):
 class SummaryResponse(BaseModel):
     summary: str
 
-
-# ----------------------------------------------------------------- helpers
 def _complete(user_prompt: str) -> str:
     try:
         res = _get_client().chat.completions.create(
@@ -100,11 +93,8 @@ def _complete(user_prompt: str) -> str:
         )
         return res.choices[0].message.content.strip()
     except Exception as e:
-        # Spring이 이 실패를 잡아 fallback 문구로 대체한다
         raise HTTPException(status_code=502, detail=f"LLM 호출 실패: {e}")
 
-
-# ------------------------------------------------------------------ routes
 @router.post("/story", response_model=SummaryResponse)
 def summarize_story(req: StorySummaryRequest) -> SummaryResponse:
     lines = [

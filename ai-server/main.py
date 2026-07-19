@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
 
-# 라우터를 import 하기 전에 .env 를 먼저 읽어야 한다 (아래 설명 참고)
 load_dotenv()
 
 from fastapi import FastAPI
