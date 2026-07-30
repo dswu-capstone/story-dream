@@ -50,14 +50,18 @@ public class StoryServiceImpl implements StoryService {
         Pageable pageable = PageRequest.of(page, size);
 
         Page<OriginalStory> storyPage =
-                originalStoryRepository.findByLanguageCode(languageCode, pageable);
+                originalStoryRepository.findActiveStories(
+                        languageCode,
+                        generatorType,
+                        version,
+                        pageable
+                );
 
         List<StoryRecommendationResponse.StorySummary> stories =
                 storyPage.getContent().stream()
                         .map(story -> new StoryRecommendationResponse.StorySummary(
                                 story.getId(),
-                                story.getTitle(),
-                                story.getLanguageCode()
+                                story.getTitle()
                         ))
                         .toList();
 
