@@ -1,8 +1,10 @@
 .story-reading-page {
   position: relative;
+  box-sizing: border-box;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   padding: 24px 24px 28px 32px;
+  overflow: hidden;
   background: linear-gradient(180deg, #fcffef 0%, #fdfdeb 100%);
 }
 
@@ -46,9 +48,10 @@
 
 .story-reading-page__content {
   display: grid;
-  grid-template-columns: 318px 1fr;
+  grid-template-columns: 318px minmax(0, 1fr);
   gap: 30px;
   align-items: center;
+  height: 318px;
   margin-top: 92px;
   padding-left: 14px;
 }
@@ -65,31 +68,56 @@
   align-self: stretch;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding-left: 12px;
-  padding-right: 30px;
-  padding-top: 18px;
+  min-width: 0;
+  height: 318px;
+  padding: 18px 30px 0 12px;
 }
 
 .story-reading-page__title {
-  margin-bottom: 24px;
+  flex-shrink: 0;
+  margin: 0 0 24px;
   font-size: 32px;
   font-weight: 600;
   color: #111;
 }
 
+/*
+ * 제목을 제외하고 남은 높이만 문장 영역으로 사용한다.
+ * 이 영역을 넘는 문장은 TypeScript 코드에서 다음 페이지로 분리된다.
+ */
 .story-reading-page__sentences {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .story-reading-page__sentence {
+  margin: 0;
   font-size: 24px;
   font-weight: 500;
   line-height: 1.55;
   color: #111;
   word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/*
+ * 문장 높이를 측정하기 위한 숨겨진 영역이다.
+ * 실제 문장 영역과 동일한 flex, gap 스타일을 사용해야 한다.
+ */
+.story-reading-page__text-measurer {
+  position: fixed;
+  top: 0;
+  left: -99999px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .story-reading-page__actions {

@@ -1,4 +1,5 @@
 import "./startPage.css";
+import { useNavigate } from "react-router-dom";
 
 import backgroundHills from "../../assets/background_hills.svg";
 import character from "../../assets/character.svg";
@@ -7,19 +8,33 @@ import profileIcon from "../../assets/profile.svg";
 import speechBubble from "../../assets/start_page_speech_bubble.svg";
 import Logo from "../../components/Logo/logo";
 
+import { navigateWithAuth } from "../../utils/auth";
+
 function StartPage() {
+  const navigate = useNavigate();
+
   return (
     <main className="start-page">
       <Logo />
 
       <section className="start-menu">
-        <button className="menu-button reading-button">
+        <button
+          className="menu-button reading-button"
+          onClick={() =>
+            navigateWithAuth(navigate, "/children/select")
+          }
+        >
           <img src={readingBookIcon} alt="" className="menu-icon" />
           <span>독서 시작</span>
           <span className="menu-arrow">▶</span>
         </button>
 
-        <button className="menu-button guardian-button">
+        <button
+          className="menu-button guardian-button"
+          onClick={() =>
+            navigateWithAuth(navigate, "/guardian/children")
+          }
+        >
           <img src={profileIcon} alt="" className="menu-icon" />
           <span>보호자 메뉴</span>
           <span className="menu-arrow">▶</span>
