@@ -5,6 +5,6 @@ import java.util.List;
 public record StoryPartResponse(
         String type,
         Integer orderNum,
-        List<StorySentenceResponse> sentences
+        List<StoryPageResponse> pages
 ) {
 }

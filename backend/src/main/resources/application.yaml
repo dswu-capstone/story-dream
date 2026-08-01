@@ -17,9 +17,14 @@ spring:
         format_sql: false
 jwt:
   secret: ${JWT_SECRET}        # 최소 32바이트 이상 (HS256)
-  expiration: 3600000          # 1시간(ms)
+  expiration: 86400000         # 24시간(ms)
 
 story:
   dataset:
-    generator-type: GPT
-    version: v1
+    ko:
+      generator-type: GPT
+      version: v1
+
+    en:
+      generator-type: FINE_TUNED
+      version: v1

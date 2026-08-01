@@ -1,16 +1,11 @@
 package com.storydream.backend.domain.story.service;
 
-import com.storydream.backend.domain.story.dto.StoryDetailResponse;
-import com.storydream.backend.domain.story.dto.StoryPartResponse;
-import com.storydream.backend.domain.story.dto.StoryRecommendationResponse;
-import com.storydream.backend.domain.story.dto.StorySentenceResponse;
+import com.storydream.backend.domain.story.dto.*;
 import com.storydream.backend.domain.story.entity.OriginalStory;
 import com.storydream.backend.domain.story.entity.StoryLevel;
+import com.storydream.backend.domain.story.entity.StoryPage;
 import com.storydream.backend.domain.story.entity.StoryPart;
-import com.storydream.backend.domain.story.repository.OriginalStoryRepository;
-import com.storydream.backend.domain.story.repository.StoryLevelRepository;
-import com.storydream.backend.domain.story.repository.StoryPartRepository;
-import com.storydream.backend.domain.story.repository.StorySentenceRepository;
+import com.storydream.backend.domain.story.repository.*;
 import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -32,12 +27,19 @@ public class StoryServiceImpl implements StoryService {
     private final StoryLevelRepository storyLevelRepository;
     private final StoryPartRepository storyPartRepository;
     private final StorySentenceRepository storySentenceRepository;
+    private final StoryPageRepository storyPageRepository;
 
-    @Value("${story.dataset.generator-type}")
-    private String generatorType;
+    @Value("${story.dataset.ko.generator-type}")
+    private String koGeneratorType;
 
-    @Value("${story.dataset.version}")
-    private String version;
+    @Value("${story.dataset.ko.version}")
+    private String koVersion;
+
+    @Value("${story.dataset.en.generator-type}")
+    private String enGeneratorType;
+
+    @Value("${story.dataset.en.version}")
+    private String enVersion;
 
     @Override
     public StoryRecommendationResponse getRecommendations(
@@ -46,6 +48,16 @@ public class StoryServiceImpl implements StoryService {
             Integer page,
             Integer size
     ) {
+        String generatorType;
+        String version;
+
+        if (languageCode.equals("ko")) {
+            generatorType = koGeneratorType;
+            version = koVersion;
+        } else {
+            generatorType = enGeneratorType;
+            version = enVersion;
+        }
 
         Pageable pageable = PageRequest.of(page, size);
 
@@ -83,6 +95,8 @@ public class StoryServiceImpl implements StoryService {
 
     @Override
     public StoryDetailResponse getStoryDetail(Integer originalStoryId, Integer level) {
+
+
         if (level < 1 || level > 3) {
             throw new BusinessException(ErrorCode.INVALID_STORY_LEVEL);
         }
@@ -90,6 +104,17 @@ public class StoryServiceImpl implements StoryService {
         // 1. OriginalStory 조회
         OriginalStory originalStory = originalStoryRepository.findById(originalStoryId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORY_NOT_FOUND));
+
+        String generatorType;
+        String version;
+
+        if (originalStory.getLanguageCode().equals("ko")) {
+            generatorType = koGeneratorType;
+            version = koVersion;
+        } else {
+            generatorType = enGeneratorType;
+            version = enVersion;
+        }
 
         // 2. StoryLevel 조회
         StoryLevel storyLevel = storyLevelRepository
@@ -103,7 +128,7 @@ public class StoryServiceImpl implements StoryService {
 
         // 3. StoryPart 조회
         List<StoryPartResponse> parts = storyPartRepository
-                .findByStoryLevelIdOrderByOrderNumAsc(storyLevel.getId()) // 현재 동화 레벨에 해당하는 문단들 가져오기
+                .findByStoryLevelIdOrderByOrderNumAsc(storyLevel.getId()) // 해당 레벨의 문단 정보 가져오기
                 .stream()// 가져온 문단 리스트들을 하나씩 처리
                 .map(part -> toStoryPartResponse(storyLevel.getId(), part))
                 .toList(); // 변환된 결과들을 다시 리스트로
@@ -117,26 +142,57 @@ public class StoryServiceImpl implements StoryService {
         );
     }
 
+    // StoryPart 객체 하나를 StoryPartResponse 객체 하나로 변환
     private StoryPartResponse toStoryPartResponse(
             Integer storyLevelId,
             StoryPart part
     ) {
-        List<StorySentenceResponse> sentences = storySentenceRepository
-                .findByStoryLevelIdAndSentenceIdxBetweenOrderBySentenceIdxAsc(
-                        storyLevelId,
-                        part.getStartSentenceIdx(),
-                        part.getEndSentenceIdx()
-                )
-                .stream()
-                .map(sentence -> new StorySentenceResponse(
-                        sentence.getSentenceIdx(),
-                        sentence.getContent()
-                ))
-                .toList();
+        List<StoryPageResponse> pages =
+                storyPageRepository
+                        .findByStoryPartIdOrderByPageNumAsc(
+                                part.getId()
+                        )
+                        .stream()
+                        .map(page ->
+                                toPageResponse(
+                                        storyLevelId,
+                                        page
+                                )
+                        )
+                        .toList();
 
         return new StoryPartResponse(
                 part.getType(),
                 part.getOrderNum(),
+                pages
+        );
+    }
+
+    // 하나의 StoryPage 객체를 StoryPageResponse로 변환
+    private StoryPageResponse toPageResponse(
+            Integer storyLevelId,
+            StoryPage page
+    ) {
+        List<StorySentenceResponse> sentences =
+                storySentenceRepository
+                        .findByStoryLevelIdAndSentenceIdxBetweenOrderBySentenceIdxAsc(
+                                storyLevelId,
+                                page.getStartSentenceIdx(),
+                                page.getEndSentenceIdx()
+                        )
+                        .stream()
+                        .map(sentence ->
+                                new StorySentenceResponse(
+                                        sentence.getSentenceIdx(),
+                                        sentence.getContent()
+                                )
+                        )
+                        .toList();
+
+        return new StoryPageResponse(
+                page.getId(),
+                page.getPageNum(),
+                page.getImageUrl(),
                 sentences
         );
     }
