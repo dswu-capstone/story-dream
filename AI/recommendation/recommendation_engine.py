@@ -1,69 +1,11 @@
 """Embedding-based story recommendation scoring.
-
-This module is deliberately independent from an embedding vendor and a web
-framework. Callers provide precomputed vectors, and the scorer handles matching,
-thresholding, aggregation, and recommendation explanations.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from math import sqrt
 from typing import Sequence
-
-
-GENERIC_TAGS = frozenset(
-    {
-        "동화",
-        "사람",
-        "돈",
-        "옷",
-        "칼",
-        "가족",
-        "기쁨",
-        "행복",
-        "성공",
-        "보상",
-    }
-)
-
-LEXICAL_CONTAINMENT_BLOCKLIST = GENERIC_TAGS | frozenset(
-    {
-        "아이",
-        "마음",
-        "이야기",
-        "동물",
-        "것",
-        "child",
-        "story",
-        "person",
-        "thing",
-    }
-)
-
-ALIAS_GROUPS = tuple(
-    frozenset(group)
-    for group in (
-        ("공주", "왕녀"),
-        ("왕자", "왕자님"),
-        ("마법", "마술", "주술"),
-        ("모험", "탐험"),
-        ("상상력", "상상", "환상", "판타지"),
-        ("협력", "협동", "힘을 합치", "힘을 모으"),
-        ("용기", "용감", "담대"),
-        ("정직", "정직함", "솔직"),
-        ("princess", "royal princess"),
-        ("prince", "royal prince"),
-        ("magic", "magical", "sorcery", "enchantment"),
-        ("adventure", "quest", "exploration"),
-        ("imagination", "fantasy", "imaginary"),
-        ("cooperation", "collaboration", "teamwork", "work together"),
-        ("courage", "bravery", "brave"),
-        ("honesty", "truthfulness", "honest"),
-    )
-)
-
 
 @dataclass(frozen=True)
 class ScoringConfig:
@@ -77,10 +19,7 @@ class ScoringConfig:
     min_match_score: float = 0.50
     tag_weight: float = 0.85
     theme_weight: float = 0.90
-    generic_tag_weight: float = 0.35
     exact_match_boost: float = 0.15
-    containment_match_boost: float = 0.12
-    alias_match_boost: float = 0.10
     primary_match_weight: float = 0.70
     secondary_match_weight: float = 0.30
     base_coverage_factor: float = 0.70
@@ -91,10 +30,7 @@ class ScoringConfig:
             self.min_match_score,
             self.tag_weight,
             self.theme_weight,
-            self.generic_tag_weight,
             self.exact_match_boost,
-            self.containment_match_boost,
-            self.alias_match_boost,
             self.primary_match_weight,
             self.secondary_match_weight,
             self.base_coverage_factor,
@@ -147,7 +83,6 @@ class InterestMatch:
     raw_similarity: float
     score: float
     exact_match: bool
-    lexical_match_type: str
 
 
 @dataclass(frozen=True)
@@ -267,16 +202,11 @@ class RecommendationScorer:
             metadata.embedding,
         )
         metadata_weight = self._metadata_weight(metadata)
-        match_type = get_lexical_match_type(interest.text, metadata.text)
-        exact_match = match_type == "EXACT"
+        exact_match = _normalize_text(interest.text) == _normalize_text(metadata.text)
         score = raw_similarity * metadata_weight
 
         if exact_match:
             score += self.config.exact_match_boost
-        elif match_type == "CONTAINS":
-            score += self.config.containment_match_boost
-        elif match_type == "ALIAS":
-            score += self.config.alias_match_boost
 
         return InterestMatch(
             interest=interest.text,
@@ -285,14 +215,11 @@ class RecommendationScorer:
             raw_similarity=raw_similarity,
             score=min(1.0, score),
             exact_match=exact_match,
-            lexical_match_type=match_type,
         )
 
     def _metadata_weight(self, metadata: MetadataVector) -> float:
         if metadata.metadata_type == "THEME":
             return self.config.theme_weight
-        if _normalize_text(metadata.text) in GENERIC_TAGS:
-            return self.config.generic_tag_weight
         return self.config.tag_weight
 
     def _deduplicate_interests(
@@ -443,83 +370,6 @@ def _maximum_weight_matching(weights: Sequence[Sequence[float]]) -> list[int]:
 
 def _normalize_text(text: str) -> str:
     return " ".join(text.strip().casefold().split())
-
-
-def get_lexical_match_type(first: str, second: str) -> str:
-    normalized_first = _normalize_text(first)
-    normalized_second = _normalize_text(second)
-    if not normalized_first or not normalized_second:
-        return "NONE"
-    if normalized_first == normalized_second:
-        return "EXACT"
-    if _safe_contains(normalized_first, normalized_second):
-        return "CONTAINS"
-    if _share_alias_group(normalized_first, normalized_second):
-        return "ALIAS"
-    return "NONE"
-
-
-def _safe_contains(first: str, second: str) -> bool:
-    shorter, longer = sorted((first, second), key=len)
-    compact_shorter = _compact_text(shorter)
-    if (
-        len(compact_shorter) < 2
-        or shorter in LEXICAL_CONTAINMENT_BLOCKLIST
-        or compact_shorter in LEXICAL_CONTAINMENT_BLOCKLIST
-    ):
-        return False
-
-    if re.search(r"[가-힣]", shorter):
-        return compact_shorter in _compact_text(longer)
-
-    shorter_tokens = _word_tokens(shorter)
-    longer_tokens = _word_tokens(longer)
-    if not shorter_tokens or len(shorter_tokens) > len(longer_tokens):
-        return False
-    window_size = len(shorter_tokens)
-    return any(
-        longer_tokens[index : index + window_size] == shorter_tokens
-        for index in range(len(longer_tokens) - window_size + 1)
-    )
-
-
-def _share_alias_group(first: str, second: str) -> bool:
-    for group in ALIAS_GROUPS:
-        first_aliases = {
-            alias for alias in group if _alias_occurs(alias, first)
-        }
-        second_aliases = {
-            alias for alias in group if _alias_occurs(alias, second)
-        }
-        if first_aliases and second_aliases and first_aliases != second_aliases:
-            return True
-    return False
-
-
-def _alias_occurs(alias: str, text: str) -> bool:
-    normalized_alias = _normalize_text(alias)
-    if normalized_alias == text:
-        return True
-    if re.search(r"[가-힣]", normalized_alias):
-        return _compact_text(normalized_alias) in _compact_text(text)
-
-    alias_tokens = _word_tokens(normalized_alias)
-    text_tokens = _word_tokens(text)
-    if not alias_tokens or len(alias_tokens) > len(text_tokens):
-        return False
-    window_size = len(alias_tokens)
-    return any(
-        text_tokens[index : index + window_size] == alias_tokens
-        for index in range(len(text_tokens) - window_size + 1)
-    )
-
-
-def _compact_text(text: str) -> str:
-    return "".join(character for character in text if character.isalnum())
-
-
-def _word_tokens(text: str) -> list[str]:
-    return re.findall(r"[^\W_]+", text, flags=re.UNICODE)
 
 
 def _approximately_one(value: float) -> bool:
