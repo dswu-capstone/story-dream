@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>스토리드림</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <!-- ① 목소리 등록 -->
+    <section id="screen-enroll" class="screen enrollScreen">
+      <p id="enrollStep" class="step"></p>
+      <div id="enrollCard" class="card">
+        <p class="say">이렇게 말해보세요</p>
+        <p id="enrollPrompt" class="prompt">목소리를 등록하면<br />내 목소리로 동화를 읽어줘요</p>
+        <div class="micRow">
+          <div id="micDot" class="micDot"></div>
+          <p id="enrollStatus" class="status">시작하기를 눌러 주세요</p>
+        </div>
+        <div class="meterWrap"><div id="meter" class="meter"></div></div>
+      </div>
+      <div class="enrollBtns">
+        <button id="enrollStartBtn" class="bigBtn">🎙️ 목소리 등록 시작</button>
+        <button id="enrollSkipBtn" class="ghostBtn hidden">이미 등록했어요 · 넘어가기 →</button>
+        <button id="enrollRedoBtn" class="ghostBtn hidden">↺ 방금 문장 다시 녹음</button>
+      </div>
+    </section>
+
+    <!-- ② 서재 -->
+    <section id="screen-library" class="screen libraryScreen hidden">
+      <header class="libHeader">
+        <h1>📚 스토리드림 서재</h1>
+        <p>읽고 싶은 책을 눌러 보세요</p>
+      </header>
+      <div id="bookGrid" class="bookGrid"></div>
+    </section>
+
+    <!-- ③ 리더 -->
+    <section id="screen-reader" class="screen readerScreen hidden">
+      <div id="pageArt" class="pageArt"></div>
+
+      <button id="prevZone" class="tapZone prev" aria-label="이전 장"></button>
+      <button id="nextZone" class="tapZone next" aria-label="다음 장"></button>
+
+      <header class="topbar">
+        <button id="backBtn" class="backBtn" aria-label="서재로">📚</button>
+        <span id="readerTitle" class="title"></span>
+        <div class="levels">
+          <button class="levelBtn" data-level="1">쉬움</button>
+          <button class="levelBtn" data-level="2">보통</button>
+          <button class="levelBtn" data-level="3">깊게</button>
+        </div>
+      </header>
+
+      <section id="pageText" class="pageText pos-br"></section>
+
+      <footer class="bottombar">
+        <span id="pageLabel" class="pageLabel">1 / 1</span>
+        <input id="scrub" class="scrub" type="range" min="0" max="0" step="1" value="0" />
+        <span id="sessionDot" class="sessionDot" title="Realtime 연결 상태"></span>
+      </footer>
+
+      <audio id="narration" preload="auto"></audio>
+      <audio id="characterAudio" autoplay></audio>
+    </section>
+
+    <!-- 나레이션 준비(버퍼링) 오버레이 -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p id="loadingTitle" class="loadingTitle"></p>
+      <div class="progressWrap"><div id="progressBar" class="progressBar"></div></div>
+      <p id="loadingDetail" class="loadingDetail">목소리를 준비하고 있어요…</p>
+    </div>
+
+    <!-- 캐릭터(퀴즈) 오버레이 — 흰 배경 위에 dreamy 캐릭터만 -->
+    <div id="character" class="character hidden">
+      <canvas id="dreamyCanvas" class="dreamyCanvas"></canvas>
+      <p id="characterText" class="characterText"></p>
+      <p id="characterHint" class="characterHint"></p>
+    </div>
+
+    <script src="/js/main.js" type="module"></script>
+  </body>
+</html>

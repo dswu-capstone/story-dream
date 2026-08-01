@@ -9,8 +9,7 @@ public record StoryRecommendationResponse (
 ) {
     public record StorySummary(
             Integer originalStoryId,
-            String title,
-            String languageCode
+            String title
     ) { }
 
     public record PageInfo(

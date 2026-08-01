@@ -1,0 +1,9 @@
+{
+  "name": "storydream-app",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Story Dream unified app: voice enrollment, library, narration generation, reader with focus quiz.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
