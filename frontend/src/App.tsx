@@ -20,14 +20,8 @@ function App() {
       <Routes>
         <Route path="/" element={<StartPage />} />
         <Route path="/children/select" element={<ProfileSelectPage />} />
-        <Route
-          path="/children/level-adjust/:variant"
-          element={<InteractionPage />}
-        />
-        <Route
-          path="/stories/complete"
-          element={<ReadingCompletePage />}
-        />
+        <Route path="/children/level-adjust/:variant" element={<InteractionPage />} />
+        <Route path="/stories/complete" element={<ReadingCompletePage />} />
         <Route path="/stories/quiz" element={<StoryQuizPage />} />
         <Route path="/stories/result" element={<StoryResultPage />} />
         <Route path="/stories/recommend" element={<StoryRecommendPage />} />
@@ -37,7 +31,6 @@ function App() {
         <Route path="/guardian/children" element={<ChildManagementPage />} />
         <Route path="/guardian/children/new" element={<ChildCreatePage />} />
         <Route path="/guardian/children/:childId" element={<ChildEditPage />} />
-
       </Routes>
     </BrowserRouter>
   );

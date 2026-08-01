@@ -273,7 +273,7 @@ export async function getStoryDetail(
     parts: result.data.parts,
     illustrationSrc:
       storyIllustrations[
-        (result.data.originalStoryId - 1) % storyIllustrations.length
+      (result.data.originalStoryId - 1) % storyIllustrations.length
       ],
   };
 }
