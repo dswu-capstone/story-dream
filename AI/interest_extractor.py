@@ -10,7 +10,7 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 
-DEFAULT_INTEREST_EXTRACTION_MODEL = "gpt-5.6-luna"
+DEFAULT_INTEREST_EXTRACTION_MODEL = "gpt-4o-mini"
 MIN_EXTRACTED_INTERESTS = 3
 MAX_EXTRACTED_INTERESTS = 5
 
