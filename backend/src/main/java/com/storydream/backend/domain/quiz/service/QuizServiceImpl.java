@@ -83,9 +83,20 @@ public class QuizServiceImpl implements QuizService {
 
         quizResultRepository.save(quizResult);
 
+        // 해당 파트에 다음 퀴즈 존재 여부 조회
+        boolean hasNextQuiz = quizRepository.existsByOriginalStoryIdAndPartTypeAndOrderNumGreaterThan(
+                quiz.getOriginalStory().getId(),
+                quiz.getPartType(),
+                quiz.getOrderNum()
+        );
+
+        boolean isLastQuizOfPart = !hasNextQuiz;
+
         return new QuizSubmitResponse(
                 isCorrect,
-                quiz.getAnswer()
+                quiz.getAnswer(),
+                isLastQuizOfPart,
+                null // 난이도 변경 로직은 추후에 추가
         );
     }
 
