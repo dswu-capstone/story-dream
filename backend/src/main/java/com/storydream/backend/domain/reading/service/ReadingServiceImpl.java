@@ -5,7 +5,9 @@ import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.reading.dto.ReadingStartRequest;
 import com.storydream.backend.domain.reading.dto.ReadingStartResponse;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
+import com.storydream.backend.domain.reading.entity.ReadingLog;
 import com.storydream.backend.domain.reading.repository.ReadingHistoryRepository;
+import com.storydream.backend.domain.reading.repository.ReadingLogRepository;
 import com.storydream.backend.domain.story.entity.OriginalStory;
 import com.storydream.backend.domain.story.repository.OriginalStoryRepository;
 import com.storydream.backend.global.exception.BusinessException;
@@ -22,6 +24,7 @@ public class ReadingServiceImpl implements ReadingService {
     private final ReadingHistoryRepository readingHistoryRepository;
     private final ChildRepository childRepository;
     private final OriginalStoryRepository originalStoryRepository;
+    private final ReadingLogRepository readingLogRepository;
 
     @Override
     @Transactional
@@ -44,6 +47,16 @@ public class ReadingServiceImpl implements ReadingService {
                 .build();
 
         ReadingHistory savedReadingHistory = readingHistoryRepository.save(readingHistory);
+
+        Integer defaultLevel = child.getDefaultLevel();
+
+        ReadingLog readingLog = ReadingLog.builder()
+                .readingHistory(readingHistory)
+                .partType("서론")
+                .level(defaultLevel)
+                .build();
+
+        ReadingLog readinglog = readingLogRepository.save(readingLog);
 
         return new ReadingStartResponse(savedReadingHistory.getId());
     }
