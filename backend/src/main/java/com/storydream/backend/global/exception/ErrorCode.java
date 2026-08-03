@@ -17,14 +17,18 @@ public enum ErrorCode {
     INVALID_STORY_LEVEL(HttpStatus.BAD_REQUEST, "잘못된 동화 난이도입니다."),
     STORY_NOT_FOUND(HttpStatus.NOT_FOUND, "동화를 찾을 수 없습니다."),
     STORY_LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 버전의 동화를 찾을 수 없습니다."),
+    STORY_PART_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파트의 동화를 찾을 수 없습니다."),
 
 
     CHILD_NOT_FOUND(HttpStatus.NOT_FOUND,"자녀 정보를 찾을 수 없습니다."),
 
     READING_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다."),
+    READING_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 로그를 찾을 수 없습니다."),
+    INVALID_NEXT_PART(HttpStatus.BAD_REQUEST, "결론 이후에는 다음 파트가 없습니다."),
 
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
     INVALID_PART_TYPE(HttpStatus.BAD_REQUEST, "문단 타입은 서론, 본론, 결론 중 하나여야 합니다.");
+
     private final HttpStatus status;
     private final String message;
 }

@@ -1,5 +1,7 @@
 package com.storydream.backend.domain.reading.controller;
 
+import com.storydream.backend.domain.reading.dto.NextPartRequest;
+import com.storydream.backend.domain.reading.dto.NextPartResponse;
 import com.storydream.backend.domain.reading.dto.ReadingStartRequest;
 import com.storydream.backend.domain.reading.dto.ReadingStartResponse;
 import com.storydream.backend.domain.reading.service.ReadingService;
@@ -89,4 +91,48 @@ public class ReadingController {
         );
     }
 
+    @Operation(
+            summary = "다음 파트 시작 및 조회",
+            description = """
+                    현재 읽고 있는 파트의 다음 파트를 시작합니다.
+
+                    - readingHistoryId : 현재 독서 기록 ID
+                    - selectedLevel : 아이가 최종 선택한 다음 파트 난이도
+
+                    현재 파트 레벨과 선택 레벨이 같으면
+                    기존 동화 내용을 그대로 사용하므로 story는 null로 반환합니다.
+
+                    현재 파트 레벨과 선택 레벨이 다르면
+                    변경된 레벨의 전체 동화 내용을 반환합니다.
+                    """
+    )
+    @PostMapping("/{readingHistoryId}/next-part")
+    public ResponseEntity<ApiResponse<NextPartResponse>> nextPart(
+            Authentication authentication,
+
+            @Parameter(
+                    description = "현재 독서 기록 ID",
+                    example = "15"
+            )
+            @PathVariable Integer readingHistoryId,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "다음 파트 시작 요청",
+                    required = true
+            )
+            @Valid @RequestBody NextPartRequest request
+    ) {
+        Integer guardianId = Integer.valueOf(authentication.getName());
+
+        NextPartResponse response =
+                readingService.startNextPart(
+                        guardianId,
+                        readingHistoryId,
+                        request
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(response)
+        );
+    }
 }
