@@ -13,17 +13,17 @@ from typing import Annotated, Literal, Protocol
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from AI.recommendation.embedding_client import (
+from app.recommendation.embedding_client import (
     DEFAULT_EMBEDDING_URL,
     OpenAIEmbeddingClient,
 )
-from AI.recommendation.environment import DEFAULT_ENV_PATH, read_env_file
-from AI.recommendation.interest_extractor import InterestPreprocessor
-from AI.recommendation.metadata_embedding_store import (
+from app.recommendation.environment import DEFAULT_ENV_PATH, read_env_file
+from app.recommendation.interest_extractor import InterestPreprocessor
+from app.recommendation.metadata_embedding_store import (
     DEFAULT_EMBEDDINGS_PATH,
     MetadataEmbeddingStore,
 )
-from AI.recommendation.recommendation_engine import (
+from app.recommendation.recommendation_engine import (
     InterestVector,
     RecommendationScorer,
     ScoredStory,
