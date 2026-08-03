@@ -8,6 +8,8 @@ import com.storydream.backend.domain.quiz.entity.Quiz;
 import com.storydream.backend.domain.quiz.entity.QuizResult;
 import com.storydream.backend.domain.quiz.repository.QuizRepository;
 import com.storydream.backend.domain.quiz.repository.QuizResultRepository;
+import com.storydream.backend.domain.reading.dto.NextPartRequest;
+import com.storydream.backend.domain.reading.dto.NextPartResponse;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
 import com.storydream.backend.domain.reading.repository.ReadingHistoryRepository;
 import com.storydream.backend.global.exception.BusinessException;
@@ -83,9 +85,20 @@ public class QuizServiceImpl implements QuizService {
 
         quizResultRepository.save(quizResult);
 
+        // 해당 파트에 다음 퀴즈 존재 여부 조회
+        boolean hasNextQuiz = quizRepository.existsByOriginalStoryIdAndPartTypeAndOrderNumGreaterThan(
+                quiz.getOriginalStory().getId(),
+                quiz.getPartType(),
+                quiz.getOrderNum()
+        );
+
+        boolean isLastQuizOfPart = !hasNextQuiz;
+
         return new QuizSubmitResponse(
                 isCorrect,
-                quiz.getAnswer()
+                quiz.getAnswer(),
+                isLastQuizOfPart,
+                null // 난이도 변경 로직은 추후에 추가
         );
     }
 

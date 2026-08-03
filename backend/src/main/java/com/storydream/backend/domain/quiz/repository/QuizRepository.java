@@ -11,4 +11,10 @@ public interface QuizRepository extends JpaRepository<Quiz, Integer> {
             Integer originalStoryId,
             String partType
     );
+
+    boolean existsByOriginalStoryIdAndPartTypeAndOrderNumGreaterThan(
+            Integer originalStoryId,
+            String partType,
+            Integer orderNum
+    );
 }
