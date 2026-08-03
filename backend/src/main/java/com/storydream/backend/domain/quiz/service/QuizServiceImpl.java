@@ -8,6 +8,8 @@ import com.storydream.backend.domain.quiz.entity.Quiz;
 import com.storydream.backend.domain.quiz.entity.QuizResult;
 import com.storydream.backend.domain.quiz.repository.QuizRepository;
 import com.storydream.backend.domain.quiz.repository.QuizResultRepository;
+import com.storydream.backend.domain.reading.dto.NextPartRequest;
+import com.storydream.backend.domain.reading.dto.NextPartResponse;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
 import com.storydream.backend.domain.reading.repository.ReadingHistoryRepository;
 import com.storydream.backend.global.exception.BusinessException;
