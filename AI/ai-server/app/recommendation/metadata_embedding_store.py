@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from AI.recommendation.recommendation_engine import MetadataVector, StoryCandidate
+from app.recommendation.recommendation_engine import MetadataVector, StoryCandidate
 
 
 RECOMMENDATION_ROOT = Path(__file__).resolve().parent

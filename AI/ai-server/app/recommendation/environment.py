@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2] # ai-server 폴더
 DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
 
 
