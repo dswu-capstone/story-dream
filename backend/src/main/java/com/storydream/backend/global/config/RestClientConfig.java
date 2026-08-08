@@ -8,8 +8,8 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    public RestClient aiRestClient(RestClient.Builder builder) {
-        return builder
+    public RestClient aiRestClient() {
+        return RestClient.builder()
                 .baseUrl("http://localhost:8000") // ai 서버 주소
                 .build();
     }

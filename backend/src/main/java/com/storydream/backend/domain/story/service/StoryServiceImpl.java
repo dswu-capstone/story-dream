@@ -8,6 +8,7 @@ import com.storydream.backend.domain.story.entity.StoryLevel;
 import com.storydream.backend.domain.story.entity.StoryPage;
 import com.storydream.backend.domain.story.entity.StoryPart;
 import com.storydream.backend.domain.story.repository.*;
+import com.storydream.backend.global.client.AiRecommendationClient;
 import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-
 import java.util.List;
 
 @Service
@@ -34,7 +33,8 @@ public class StoryServiceImpl implements StoryService {
     private final StoryPageRepository storyPageRepository;
     private final ChildRepository childRepository;
 
-    private final RestClient aiRestClient;
+    // 추천 Client
+    private final AiRecommendationClient aiRecommendationClient;
 
     @Value("${story.dataset.ko.generator-type}")
     private String koGeneratorType;
@@ -48,6 +48,7 @@ public class StoryServiceImpl implements StoryService {
     @Value("${story.dataset.en.version}")
     private String enVersion;
 
+
     @Override
     public StoryRecommendationResponse getRecommendations(
             Integer childId,
@@ -55,16 +56,16 @@ public class StoryServiceImpl implements StoryService {
             Integer page,
             Integer size
     ) {
-        String generatorType;
-        String version;
-
-        if (languageCode.equals("ko")) {
-            generatorType = koGeneratorType;
-            version = koVersion;
-        } else {
-            generatorType = enGeneratorType;
-            version = enVersion;
-        }
+//        String generatorType;
+//        String version;
+//
+//        if (languageCode.equals("ko")) {
+//            generatorType = koGeneratorType;
+//            version = koVersion;
+//        } else {
+//            generatorType = enGeneratorType;
+//            version = enVersion;
+//        }
 
         Pageable pageable = PageRequest.of(page, size);
 
@@ -83,20 +84,22 @@ public class StoryServiceImpl implements StoryService {
         // 관심분야 조회
         String[] interests = child.getInterest();
 
-        // 추천시스템 연동
-        AiRecommendationRequest aiRequest = new AiRecommendationRequest(interests, "ko");
-
-        AiRecommendationResponse aiResponse = aiRestClient.post()
-                .uri("/recommendations")
-                .body(aiRequest)
-                .retrieve()
-                .body(AiRecommendationResponse.class);
-
-        List<AiRecommendedStory> recommendedStories = aiResponse.recommendations();
+        // 전체 추천 결과 조회
+        // 첫 호출: FastAPI 호출
+        // 이후 호출: 캐시에서 호출
+        List<AiRecommendedStory> recommendedStories =
+                aiRecommendationClient.getRecommendations(
+                        childId,
+                        interests,
+                        languageCode
+                );
 
         // page, size에 맞게 자르기
         int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), recommendedStories.size());
+        int end = Math.min(
+                start + pageable.getPageSize(),
+                recommendedStories.size()
+        );
 
         List<AiRecommendedStory> content =
                 start >= recommendedStories.size()

@@ -27,7 +27,8 @@ public enum ErrorCode {
     INVALID_NEXT_PART(HttpStatus.BAD_REQUEST, "결론 이후에는 다음 파트가 없습니다."),
 
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
-    INVALID_PART_TYPE(HttpStatus.BAD_REQUEST, "문단 타입은 서론, 본론, 결론 중 하나여야 합니다.");
+    INVALID_PART_TYPE(HttpStatus.BAD_REQUEST, "문단 타입은 서론, 본론, 결론 중 하나여야 합니다."),
+    AI_RECOMMENDATION_FAILED(HttpStatus.BAD_GATEWAY, "AI 추천 시스템 호출에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;
