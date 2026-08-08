@@ -1,5 +1,7 @@
 package com.storydream.backend.domain.story.service;
 
+import com.storydream.backend.domain.child.entity.Child;
+import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.story.dto.*;
 import com.storydream.backend.domain.story.entity.OriginalStory;
 import com.storydream.backend.domain.story.entity.StoryLevel;
@@ -11,10 +13,12 @@ import com.storydream.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
@@ -28,6 +32,9 @@ public class StoryServiceImpl implements StoryService {
     private final StoryPartRepository storyPartRepository;
     private final StorySentenceRepository storySentenceRepository;
     private final StoryPageRepository storyPageRepository;
+    private final ChildRepository childRepository;
+
+    private final RestClient aiRestClient;
 
     @Value("${story.dataset.ko.generator-type}")
     private String koGeneratorType;
@@ -61,19 +68,54 @@ public class StoryServiceImpl implements StoryService {
 
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<OriginalStory> storyPage =
-                originalStoryRepository.findActiveStories(
-                        languageCode,
-                        generatorType,
-                        version,
-                        pageable
+//        Page<OriginalStory> storyPage =
+//                originalStoryRepository.findActiveStories(
+//                        languageCode,
+//                        generatorType,
+//                        version,
+//                        pageable
+//                );
+
+        // ChildId로 child 엔티티 조회
+        Child child = childRepository.findById(childId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHILD_NOT_FOUND));
+
+        // 관심분야 조회
+        String[] interests = child.getInterest();
+
+        // 추천시스템 연동
+        AiRecommendationRequest aiRequest = new AiRecommendationRequest(interests, "ko");
+
+        AiRecommendationResponse aiResponse = aiRestClient.post()
+                .uri("/recommendations")
+                .body(aiRequest)
+                .retrieve()
+                .body(AiRecommendationResponse.class);
+
+        List<AiRecommendedStory> recommendedStories = aiResponse.recommendations();
+
+        // page, size에 맞게 자르기
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), recommendedStories.size());
+
+        List<AiRecommendedStory> content =
+                start >= recommendedStories.size()
+                        ? List.of()
+                        : recommendedStories.subList(start, end);
+
+        Page<AiRecommendedStory> storyPage =
+                new PageImpl<>(
+                        content,
+                        pageable,
+                        recommendedStories.size()
                 );
 
+        // 응답 DTO 반환
         List<StoryRecommendationResponse.StorySummary> stories =
                 storyPage.getContent().stream()
                         .map(story -> new StoryRecommendationResponse.StorySummary(
-                                story.getId(),
-                                story.getTitle()
+                                story.originalStoryId(),
+                                story.title()
                         ))
                         .toList();
 
@@ -91,6 +133,29 @@ public class StoryServiceImpl implements StoryService {
                 stories,
                 pageInfo
         );
+//
+//        List<StoryRecommendationResponse.StorySummary> stories =
+//                storyPage.getContent().stream()
+//                        .map(story -> new StoryRecommendationResponse.StorySummary(
+//                                story.getId(),
+//                                story.getTitle()
+//                        ))
+//                        .toList();
+//
+//        StoryRecommendationResponse.PageInfo pageInfo =
+//                new StoryRecommendationResponse.PageInfo(
+//                        storyPage.getNumber(),
+//                        storyPage.getSize(),
+//                        storyPage.getTotalPages(),
+//                        storyPage.getTotalElements(),
+//                        storyPage.hasNext(),
+//                        storyPage.hasPrevious()
+//                );
+//
+//        return new StoryRecommendationResponse(
+//                stories,
+//                pageInfo
+//        );
     }
 
     @Override
