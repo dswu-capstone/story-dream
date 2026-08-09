@@ -7,6 +7,7 @@ import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -36,6 +37,13 @@ public class AiRecommendationClient {
                         interests,
                         languageCode
                 );
+//
+//        System.out.println("===== AI 추천 요청 =====");
+//        System.out.println("childId = " + childId);
+//        System.out.println("interests = " + java.util.Arrays.toString(interests));
+//        System.out.println("languageCode = " + languageCode);
+//        System.out.println("======================");
+
 
         AiRecommendationResponse response =
                 aiRestClient.post()
@@ -48,5 +56,17 @@ public class AiRecommendationClient {
             throw new BusinessException(ErrorCode.AI_RECOMMENDATION_FAILED);
         }
         return response.recommendations();
+//
+//        String response =
+//                aiRestClient.post()
+//                        .uri("/debug")
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .body(request)
+//                        .retrieve()
+//                        .body(String.class);
+//
+//        System.out.println("FastAPI response = " + response);
+//
+//        return List.of(); // 디버깅용 임시
     }
 }
