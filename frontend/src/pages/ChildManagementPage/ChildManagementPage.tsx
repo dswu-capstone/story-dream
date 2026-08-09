@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import "./childManagementPage.css";
+import "./ChildManagementPage.css";
 
 import ArrowButton from "../../components/ArrowButton/arrowButton";
 import Logo from "../../components/Logo/logo";

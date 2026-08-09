@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Story Dream
+Name[ko]=스토리드림
+Comment=Story Dream 앱 실행
+Comment[ko]=스토리드림 앱을 실행합니다
+Exec=@LAUNCHER@
+Icon=@ICON@
+Terminal=false
+Categories=Education;Application;
+StartupNotify=true
+StartupWMClass=Chromium

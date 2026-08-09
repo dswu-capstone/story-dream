@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import "./LoginPage.css";
+import "./loginPage.css";
 
 import cloudLeft from "../../assets/cloud1.svg";
 import cloudRight from "../../assets/cloud2.svg";
