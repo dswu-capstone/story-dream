@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import KioskExitButton from "./components/KioskExitButton/kioskExitButton";
 import StartPage from "./pages/StartPage/startPage";
 import InteractionPage from "./pages/InteractionPage/interactionPage";
 import LoginPage from "./pages/LoginPage/loginPage";
@@ -32,6 +33,7 @@ function App() {
         <Route path="/guardian/children/new" element={<ChildCreatePage />} />
         <Route path="/guardian/children/:childId" element={<ChildEditPage />} />
       </Routes>
+      <KioskExitButton />
     </BrowserRouter>
   );
 }
