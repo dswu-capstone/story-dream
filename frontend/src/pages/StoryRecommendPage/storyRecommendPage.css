@@ -5,12 +5,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 70px 28px 32px;
+  padding: 72px 24px 22px;
 }
 
 .story-recommend-page__title {
-  margin-top: 18px;
-  font-size: clamp(2rem, 3.4vw, 3rem);
+  margin-top: 10px;
+  font-size: 32px;
   font-weight: 500;
   line-height: 1.25;
   color: #111;
@@ -25,25 +25,28 @@
 }
 
 .story-recommend-page__carousel {
-  width: 100%;
-  margin-top: 46px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 44px;
   display: grid;
-  grid-template-columns: 48px 1fr 48px;
+  grid-template-columns: 42px 1fr 42px;
   align-items: center;
-  column-gap: 14px;
+  justify-content: center;
+  column-gap: 10px;
 }
 
 .story-recommend-page__list {
   display: flex;
   justify-content: center;
-  gap: 22px;
+  align-items: center;
+  gap: 16px;
 }
 
 .story-recommend-page__card {
-  width: min(21vw, 210px);
-  min-width: 180px;
+  width: 172px;
+  min-width: 0;
   border: none;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   background: #fff;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
@@ -54,7 +57,7 @@
 .story-recommend-page__thumbnail {
   display: block;
   width: 100%;
-  height: 230px;
+  height: 184px;
   object-fit: cover;
   background: #dfeaf9;
 }
@@ -63,13 +66,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px 16px;
+  gap: 8px;
+  padding: 9px 12px 12px;
 }
 
 .story-recommend-page__card-title {
   width: 100%;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.25;
   color: #111;
@@ -79,25 +82,25 @@
 
 .story-recommend-page__chip {
   min-width: 72px;
-  padding: 6px 16px;
+  padding: 5px 14px;
   border-radius: 999px;
   background: #f8ebbc;
   color: #111;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1;
   text-align: center;
 }
 
 .story-recommend-page__pagination {
-  margin-top: 40px;
+  margin-top: 34px;
   display: flex;
-  gap: 18px;
+  gap: 14px;
 }
 
 .story-recommend-page__dot {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   border-radius: 999px;
   background: #d8d8d8;
 }
@@ -108,14 +111,14 @@
 
 @media (max-width: 900px) {
   .story-recommend-page__list {
-    gap: 16px;
+    gap: 12px;
   }
 
   .story-recommend-page__card {
-    min-width: 160px;
+    width: 150px;
   }
 
   .story-recommend-page__thumbnail {
-    height: 190px;
+    height: 160px;
   }
 }

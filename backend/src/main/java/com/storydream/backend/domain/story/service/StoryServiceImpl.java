@@ -1,21 +1,24 @@
 package com.storydream.backend.domain.story.service;
 
+import com.storydream.backend.domain.child.entity.Child;
+import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.story.dto.*;
 import com.storydream.backend.domain.story.entity.OriginalStory;
 import com.storydream.backend.domain.story.entity.StoryLevel;
 import com.storydream.backend.domain.story.entity.StoryPage;
 import com.storydream.backend.domain.story.entity.StoryPart;
 import com.storydream.backend.domain.story.repository.*;
+import com.storydream.backend.global.client.AiRecommendationClient;
 import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 
 @Service
@@ -28,6 +31,10 @@ public class StoryServiceImpl implements StoryService {
     private final StoryPartRepository storyPartRepository;
     private final StorySentenceRepository storySentenceRepository;
     private final StoryPageRepository storyPageRepository;
+    private final ChildRepository childRepository;
+
+    // 추천 Client
+    private final AiRecommendationClient aiRecommendationClient;
 
     @Value("${story.dataset.ko.generator-type}")
     private String koGeneratorType;
@@ -41,6 +48,7 @@ public class StoryServiceImpl implements StoryService {
     @Value("${story.dataset.en.version}")
     private String enVersion;
 
+
     @Override
     public StoryRecommendationResponse getRecommendations(
             Integer childId,
@@ -48,32 +56,69 @@ public class StoryServiceImpl implements StoryService {
             Integer page,
             Integer size
     ) {
-        String generatorType;
-        String version;
-
-        if (languageCode.equals("ko")) {
-            generatorType = koGeneratorType;
-            version = koVersion;
-        } else {
-            generatorType = enGeneratorType;
-            version = enVersion;
-        }
+//        String generatorType;
+//        String version;
+//
+//        if (languageCode.equals("ko")) {
+//            generatorType = koGeneratorType;
+//            version = koVersion;
+//        } else {
+//            generatorType = enGeneratorType;
+//            version = enVersion;
+//        }
 
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<OriginalStory> storyPage =
-                originalStoryRepository.findActiveStories(
-                        languageCode,
-                        generatorType,
-                        version,
-                        pageable
+//        Page<OriginalStory> storyPage =
+//                originalStoryRepository.findActiveStories(
+//                        languageCode,
+//                        generatorType,
+//                        version,
+//                        pageable
+//                );
+
+        // ChildId로 child 엔티티 조회
+        Child child = childRepository.findById(childId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHILD_NOT_FOUND));
+
+        // 관심분야 조회
+        String[] interests = child.getInterest();
+
+        // 전체 추천 결과 조회
+        // 첫 호출: FastAPI 호출
+        // 이후 호출: 캐시에서 호출
+        List<AiRecommendedStory> recommendedStories =
+                aiRecommendationClient.getRecommendations(
+                        childId,
+                        interests,
+                        languageCode
                 );
 
+        // page, size에 맞게 자르기
+        int start = (int) pageable.getOffset();
+        int end = Math.min(
+                start + pageable.getPageSize(),
+                recommendedStories.size()
+        );
+
+        List<AiRecommendedStory> content =
+                start >= recommendedStories.size()
+                        ? List.of()
+                        : recommendedStories.subList(start, end);
+
+        Page<AiRecommendedStory> storyPage =
+                new PageImpl<>(
+                        content,
+                        pageable,
+                        recommendedStories.size()
+                );
+
+        // 응답 DTO 반환
         List<StoryRecommendationResponse.StorySummary> stories =
                 storyPage.getContent().stream()
                         .map(story -> new StoryRecommendationResponse.StorySummary(
-                                story.getId(),
-                                story.getTitle()
+                                story.originalStoryId(),
+                                story.title()
                         ))
                         .toList();
 
@@ -91,6 +136,29 @@ public class StoryServiceImpl implements StoryService {
                 stories,
                 pageInfo
         );
+//
+//        List<StoryRecommendationResponse.StorySummary> stories =
+//                storyPage.getContent().stream()
+//                        .map(story -> new StoryRecommendationResponse.StorySummary(
+//                                story.getId(),
+//                                story.getTitle()
+//                        ))
+//                        .toList();
+//
+//        StoryRecommendationResponse.PageInfo pageInfo =
+//                new StoryRecommendationResponse.PageInfo(
+//                        storyPage.getNumber(),
+//                        storyPage.getSize(),
+//                        storyPage.getTotalPages(),
+//                        storyPage.getTotalElements(),
+//                        storyPage.hasNext(),
+//                        storyPage.hasPrevious()
+//                );
+//
+//        return new StoryRecommendationResponse(
+//                stories,
+//                pageInfo
+//        );
     }
 
     @Override

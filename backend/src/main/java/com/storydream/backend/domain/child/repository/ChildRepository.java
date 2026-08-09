@@ -10,4 +10,5 @@ public interface ChildRepository extends JpaRepository<Child, Integer> {
 
     Optional<Child> findByIdAndGuardianId(Integer childId, Integer guardianId);
     List<Child> findAllByGuardianIdOrderByIdAsc(Integer guardianId);
+    Optional<Child> findById(Integer id);
 }
