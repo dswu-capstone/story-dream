@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface StoryPartRepository extends JpaRepository<StoryPart, Integer> {
 
     List<StoryPart> findByStoryLevelIdOrderByOrderNumAsc(Integer storyLevelId);
+    Optional<StoryPart> findByStoryLevelIdAndPartType(Integer storyLevelId, String partType);
 }

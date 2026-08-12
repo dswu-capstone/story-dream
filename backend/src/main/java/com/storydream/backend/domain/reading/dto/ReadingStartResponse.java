@@ -5,7 +5,7 @@ import java.util.List;
 public record ReadingStartResponse(
         Integer readingHistoryId,
         String partType,
-        Integer PartOrderNum,
+        Integer partOrderNum,
         List<PageResponse> pages
 ) {
 }
