@@ -182,6 +182,7 @@ public class ReadingServiceImpl implements ReadingService {
                 savedReadingHistory.getId(),
                 storyPart.getType(),
                 storyPart.getOrderNum(),
+                child.getDefaultLevel(),
                 pageResponses
         );
     }
@@ -361,7 +362,6 @@ public class ReadingServiceImpl implements ReadingService {
                     );
                 })
                 .toList();
-
         // 최종 응답
         return new NextPartResponse(
                 storyPart.getType(),

@@ -6,6 +6,7 @@ public record ReadingStartResponse(
         Integer readingHistoryId,
         String partType,
         Integer partOrderNum,
+        Integer level,
         List<PageResponse> pages
 ) {
 }
