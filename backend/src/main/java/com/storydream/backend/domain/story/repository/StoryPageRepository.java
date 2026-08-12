@@ -11,4 +11,9 @@ public interface StoryPageRepository
     List<StoryPage> findByStoryPartIdOrderByPageNumAsc(
             Integer storyPartId
     );
+
+    List<StoryPage> findByStoryPart_StoryLevel_IdAndStoryPart_TypeOrderByPageNumAsc(
+            Integer storyLevelId,
+            String type
+    );
 }
