@@ -104,7 +104,7 @@ public class ReadingServiceImpl implements ReadingService {
 
         // 서론 파트 조회
         StoryPart storyPart = storyPartRepository
-                .findByStoryLevelIdAndPartType(
+                .findByStoryLevelIdAndType(
                         storyLevel.getId(),
                         "서론"
                 )
@@ -123,9 +123,9 @@ public class ReadingServiceImpl implements ReadingService {
 
         // 서론 페이지 전체 조회
         List<StoryPage> pages = storyPageRepository
-                .findByStoryLevelIdAndPartOrderNumOrderByPageNumAsc(
+                .findByStoryPart_StoryLevel_IdAndStoryPart_TypeOrderByPageNumAsc(
                         storyLevel.getId(),
-                        storyPart.getOrderNum()
+                        "서론"
                 );
 
         // 페이지가 하나도 없는 경우

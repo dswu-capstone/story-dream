@@ -14,10 +14,4 @@ public interface StoryLevelRepository extends JpaRepository<StoryLevel, Integer>
             String generatorType,
             String version
     );
-
-    List<StorySentence> findByStoryLevelIdAndSentenceIdxBetweenOrderBySentenceIdxAsc(
-            Integer storyLevelId,
-            Integer startSentenceIdx,
-            Integer endSentenceIdx
-    );
 }
