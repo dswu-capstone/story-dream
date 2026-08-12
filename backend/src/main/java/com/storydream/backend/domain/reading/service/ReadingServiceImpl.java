@@ -209,15 +209,17 @@ public class ReadingServiceImpl implements ReadingService {
             Integer readingHistoryId,
             NextPartRequest request
     ) {
+        // 로그인한 보호자의 독서 기록인지 확인
         ReadingHistory readingHistory = readingHistoryRepository
-                .findByIdAndChildGuardianId(readingHistoryId, guardianId)
+                .findByIdAndChildGuardianId(
+                        readingHistoryId,
+                        guardianId
+                )
                 .orElseThrow(() ->
                         new BusinessException(
                                 ErrorCode.READING_HISTORY_NOT_FOUND
                         )
                 );
-
-
 
         // 현재 진행 중인 파트 조회
         ReadingLog currentLog = readingLogRepository
@@ -230,10 +232,10 @@ public class ReadingServiceImpl implements ReadingService {
                         )
                 );
 
+        // 현재 파트를 기준으로 다음 파트 결정
         String currentPartType = currentLog.getPartType();
         String nextPartType;
 
-        // 현재 파트를 기준으로 다음 파트 결정
         if ("서론".equals(currentPartType)) {
             nextPartType = "본론";
         } else if ("본론".equals(currentPartType)) {
@@ -244,32 +246,56 @@ public class ReadingServiceImpl implements ReadingService {
             );
         }
 
-        Integer currentLevel = currentLog.getLevel();
+        // 프론트에서 선택한 난이도
         Integer selectedLevel = request.selectedLevel();
 
-        boolean levelChanged =
-                !selectedLevel.equals(currentLevel);
+        // 원본 동화 조회
+        OriginalStory originalStory =
+                readingHistory.getOriginalStory();
 
-        /*
-         * 레벨이 변경된 경우에만
-         * 변경된 레벨의 전체 동화 내용을 다시 조회한다.
-         *
-         * 레벨이 유지되면 프론트가 기존에 받은 동화를 사용하므로 null.
-         */
-        StoryDetailResponse storyDetail = null;
+        // 동화 언어에 따라 generatorType / version 결정
+        String generatorType;
+        String version;
 
-        if (levelChanged) {
-            Integer originalStoryId = readingHistory
-                    .getOriginalStory()
-                    .getId();
-
-            storyDetail = storyService.getStoryDetail(
-                    originalStoryId,
-                    selectedLevel
+        if ("ko".equals(originalStory.getLanguageCode())) {
+            generatorType = koGeneratorType;
+            version = koVersion;
+        } else if ("en".equals(originalStory.getLanguageCode())) {
+            generatorType = enGeneratorType;
+            version = enVersion;
+        } else {
+            throw new BusinessException(
+                    ErrorCode.INVALID_LANGUAGE
             );
         }
 
-        // 다음 파트와 실제 적용 레벨 저장
+        // 선택한 난이도의 StoryLevel 조회
+        StoryLevel storyLevel = storyLevelRepository
+                .findByOriginalStoryIdAndLevelAndGeneratorTypeAndVersion(
+                        originalStory.getId(),
+                        selectedLevel,
+                        generatorType,
+                        version
+                )
+                .orElseThrow(() ->
+                        new BusinessException(
+                                ErrorCode.STORY_LEVEL_NOT_FOUND
+                        )
+                );
+
+        // 다음 StoryPart 조회
+        StoryPart storyPart = storyPartRepository
+                .findByStoryLevelIdAndType(
+                        storyLevel.getId(),
+                        nextPartType
+                )
+                .orElseThrow(() ->
+                        new BusinessException(
+                                ErrorCode.STORY_PART_NOT_FOUND
+                        )
+                );
+
+        // 다음 파트 ReadingLog 저장
         ReadingLog nextLog = ReadingLog.builder()
                 .readingHistory(readingHistory)
                 .partType(nextPartType)
@@ -278,11 +304,70 @@ public class ReadingServiceImpl implements ReadingService {
 
         readingLogRepository.save(nextLog);
 
+        // 다음 파트의 페이지 전체 조회
+        List<StoryPage> pages = storyPageRepository
+                .findByStoryPart_StoryLevel_IdAndStoryPart_TypeOrderByPageNumAsc(
+                        storyLevel.getId(),
+                        nextPartType
+                );
+
+        if (pages.isEmpty()) {
+            throw new BusinessException(
+                    ErrorCode.STORY_PAGE_NOT_FOUND
+            );
+        }
+
+        // 다음 파트에서 필요한 전체 문장 범위
+        Integer startSentenceIdx =
+                pages.get(0).getStartSentenceIdx();
+
+        Integer endSentenceIdx =
+                pages.get(pages.size() - 1).getEndSentenceIdx();
+
+        // 필요한 문장을 DB에서 한 번에 조회
+        List<StorySentence> allSentences = storySentenceRepository
+                .findByStoryLevelIdAndSentenceIdxBetweenOrderBySentenceIdxAsc(
+                        storyLevel.getId(),
+                        startSentenceIdx,
+                        endSentenceIdx
+                );
+
+        // 페이지별 문장 매핑
+        List<PageResponse> pageResponses = pages.stream()
+                .map(page -> {
+
+                    List<SentenceResponse> sentenceResponses =
+                            allSentences.stream()
+                                    .filter(sentence ->
+                                            sentence.getSentenceIdx()
+                                                    >= page.getStartSentenceIdx()
+                                                    &&
+                                                    sentence.getSentenceIdx()
+                                                            <= page.getEndSentenceIdx()
+                                    )
+                                    .map(sentence ->
+                                            new SentenceResponse(
+                                                    sentence.getSentenceIdx(),
+                                                    sentence.getContent()
+                                            )
+                                    )
+                                    .toList();
+
+                    return new PageResponse(
+                            page.getId(),
+                            page.getPageNum(),
+                            page.getImageUrl(),
+                            sentenceResponses
+                    );
+                })
+                .toList();
+
+        // 최종 응답
         return new NextPartResponse(
-                nextPartType,
+                storyPart.getType(),
+                storyPart.getOrderNum(),
                 selectedLevel,
-                levelChanged,
-                storyDetail
+                pageResponses
         );
     }
 }

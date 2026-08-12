@@ -98,12 +98,6 @@ public class ReadingController {
 
                     - readingHistoryId : 현재 독서 기록 ID
                     - selectedLevel : 아이가 최종 선택한 다음 파트 난이도
-
-                    현재 파트 레벨과 선택 레벨이 같으면
-                    기존 동화 내용을 그대로 사용하므로 story는 null로 반환합니다.
-
-                    현재 파트 레벨과 선택 레벨이 다르면
-                    변경된 레벨의 전체 동화 내용을 반환합니다.
                     """
     )
     @PostMapping("/{readingHistoryId}/next-part")
