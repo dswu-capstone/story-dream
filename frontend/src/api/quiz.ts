@@ -22,6 +22,8 @@ type QuizSubmitApiResponse = {
   data: {
     isCorrect: boolean;
     correctAnswer: string;
+    lastQuizOfPart: boolean;
+    recommendedLevel: number | null;
   };
   message: string | null;
 };
@@ -30,6 +32,14 @@ type GetQuizListParams = {
   originalStoryId: number;
   partType?: string;
 };
+
+type SubmitQuizParams = {
+  quizId: number;
+  readingHistoryId: number;
+  selectedAnswer: string;
+};
+
+export type QuizSubmitResult = QuizSubmitApiResponse["data"];
 
 const mockQuizSets: Record<string, Quiz[]> = {
   서론: [
@@ -195,21 +205,15 @@ export async function getQuizzes({
   return result.data.quizzes;
 }
 
-export async function submitQuiz(
-  quizId: number,
-  selectedAnswer: string,
-  fallbackCorrectAnswer?: string,
-): Promise<{ isCorrect: boolean; correctAnswer: string }> {
+export async function submitQuiz({
+  quizId,
+  readingHistoryId,
+  selectedAnswer,
+}: SubmitQuizParams): Promise<QuizSubmitResult> {
   const accessToken = localStorage.getItem("accessToken");
-  const readingHistoryId = localStorage.getItem("readingHistoryId");
 
-  if (!accessToken || !readingHistoryId) {
-    const correctAnswer = fallbackCorrectAnswer ?? selectedAnswer;
-
-    return {
-      isCorrect: selectedAnswer === correctAnswer,
-      correctAnswer,
-    };
+  if (!accessToken) {
+    throw new Error("로그인이 필요합니다.");
   }
 
   const response = await fetch(`/api/quizzes/${quizId}/submit`, {
@@ -219,13 +223,13 @@ export async function submitQuiz(
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
-      readingHistoryId: Number(readingHistoryId),
+      readingHistoryId,
       selectedAnswer,
     }),
   });
 
   if (!response.ok) {
-    throw new Error("퀴즈 제출 실패");
+    throw new Error("퀴즈 답안을 제출하지 못했습니다.");
   }
 
   const result: QuizSubmitApiResponse = await response.json();

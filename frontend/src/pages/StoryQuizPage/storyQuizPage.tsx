@@ -3,68 +3,73 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyQuizPage.css";
 
-import { getMockQuizzes, getQuizzes, submitQuiz } from "../../api/quiz";
+import { getQuizzes, submitQuiz } from "../../api/quiz";
 import optionOneIcon from "../../assets/mdi_number-1-circle-outline.svg";
 import optionTwoIcon from "../../assets/mdi_number-2-circle-outline.svg";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
 import type { Quiz } from "../../types/quiz";
+import { loadReadingSession } from "../../utils/readingSession";
 
-const submitLabel = "제출하기";
+type StoryQuizLocationState = {
+  startQuizIndex?: number;
+};
+
 const optionIcons = [optionOneIcon, optionTwoIcon];
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : "퀴즈를 불러오지 못했습니다.";
+}
 
 function StoryQuizPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const storyId = Number(searchParams.get("storyId") ?? 1);
-  const level = Number(searchParams.get("level") ?? 1);
-  const partIndex = Number(searchParams.get("partIndex") ?? 0);
-  const totalParts = Number(searchParams.get("totalParts") ?? 1);
-  const partType = searchParams.get("partType") ?? "서론";
-  const startQuizIndex = (
-    location.state as { startQuizIndex?: number } | null
-  )?.startQuizIndex;
+  const locationState = location.state as StoryQuizLocationState | null;
+  const [storedSession] = useState(loadReadingSession);
+  const originalStoryId =
+    storedSession?.originalStoryId ??
+    Number(searchParams.get("originalStoryId") ?? searchParams.get("storyId"));
+  const partType =
+    storedSession?.currentPart.type ?? searchParams.get("partType") ?? "";
+  const startQuizIndex = locationState?.startQuizIndex ?? 0;
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const currentQuizIndex = startQuizIndex;
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const loadQuizzes = async () => {
       setIsLoading(true);
+      setErrorMessage("");
 
       try {
-        const data = await getQuizzes({
-          originalStoryId: storyId,
-          partType,
-        });
+        if (!storedSession) {
+          throw new Error("진행 중인 독서 기록을 찾을 수 없습니다.");
+        }
+
+        const data = await getQuizzes({ originalStoryId, partType });
 
         if (data.length === 0) {
-          setQuizzes(getMockQuizzes(partType));
-        } else {
-          setQuizzes(data);
+          throw new Error("현재 파트에 등록된 퀴즈가 없습니다.");
         }
+
+        setQuizzes(data);
       } catch (error) {
         console.error("퀴즈 목록 조회 오류:", error);
-        setQuizzes(getMockQuizzes(partType));
+        setErrorMessage(getErrorMessage(error));
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadQuizzes();
-  }, [partType, storyId]);
-
-  useEffect(() => {
-    setCurrentQuizIndex(startQuizIndex ?? 0);
-    setSelectedAnswer("");
-  }, [partType, startQuizIndex]);
-
-  useEffect(() => {
-    setSelectedAnswer("");
-  }, [currentQuizIndex]);
+  }, [originalStoryId, partType, storedSession]);
 
   const currentQuiz = quizzes[currentQuizIndex];
   const totalQuizzes = Math.max(quizzes.length, 1);
@@ -72,42 +77,44 @@ function StoryQuizPage() {
   const isOxQuiz = currentQuiz?.type === "OX";
 
   const handleSubmit = async () => {
-    if (!currentQuiz || !selectedAnswer) {
+    if (!currentQuiz || !selectedAnswer || !storedSession || isSubmitting) {
       return;
     }
 
-    let quizResult = {
-      isCorrect: selectedAnswer === currentQuiz.correctAnswer,
-      correctAnswer: currentQuiz.correctAnswer ?? selectedAnswer,
-    };
+    setIsSubmitting(true);
+    setErrorMessage("");
 
     try {
-      quizResult = await submitQuiz(
-        currentQuiz.quizId,
+      const quizResult = await submitQuiz({
+        quizId: currentQuiz.quizId,
+        readingHistoryId: storedSession.readingHistoryId,
         selectedAnswer,
-        currentQuiz.correctAnswer,
-      );
+      });
+
+      navigate("/stories/result", {
+        state: {
+          readingHistoryId: storedSession.readingHistoryId,
+          originalStoryId: storedSession.originalStoryId,
+          storyTitle: storedSession.storyTitle,
+          selectedLevel: storedSession.selectedLevel,
+          partType,
+          partOrderNum: storedSession.currentPart.orderNum,
+          quizIndex: currentQuizIndex,
+          totalQuizzes: quizzes.length,
+          selectedAnswer,
+          isCorrect: quizResult.isCorrect,
+          correctAnswer: quizResult.correctAnswer,
+          explanation: currentQuiz.explanation?.trim() ?? "",
+          lastQuizOfPart: quizResult.lastQuizOfPart,
+          recommendedLevel: quizResult.recommendedLevel,
+        },
+      });
     } catch (error) {
       console.error("퀴즈 제출 오류:", error);
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
     }
-
-    navigate("/stories/result", {
-      state: {
-        storyId,
-        level,
-        partIndex,
-        totalParts,
-        partType,
-        quizIndex: currentQuizIndex,
-        totalQuizzes: quizzes.length,
-        selectedAnswer,
-        isCorrect: quizResult.isCorrect,
-        correctAnswer: quizResult.correctAnswer,
-        explanation:
-          currentQuiz.explanation ??
-          `정답은 ${quizResult.correctAnswer}예요.`,
-      },
-    });
   };
 
   return (
@@ -117,6 +124,14 @@ function StoryQuizPage() {
       <div className="story-quiz-page__progress">
         <StoryProgressBar currentStep={currentStep} totalSteps={totalQuizzes} />
       </div>
+
+      {isLoading && <p className="story-quiz-page__status">퀴즈를 불러오는 중...</p>}
+
+      {!isLoading && errorMessage && !currentQuiz && (
+        <p className="story-quiz-page__status" role="alert">
+          {errorMessage}
+        </p>
+      )}
 
       {!isLoading && currentQuiz && (
         <>
@@ -148,6 +163,7 @@ function StoryQuizPage() {
                           : "story-quiz-page__ox-button"
                       }
                       onClick={() => setSelectedAnswer(choice)}
+                      disabled={isSubmitting}
                     >
                       {choice}
                     </button>
@@ -164,6 +180,7 @@ function StoryQuizPage() {
                         : "story-quiz-page__choice"
                     }
                     onClick={() => setSelectedAnswer(choice)}
+                    disabled={isSubmitting}
                   >
                     <img
                       src={optionIcons[index] ?? optionIcons[0]}
@@ -177,13 +194,19 @@ function StoryQuizPage() {
               })}
             </div>
 
+            {errorMessage && (
+              <p className="story-quiz-page__submit-error" role="alert">
+                {errorMessage}
+              </p>
+            )}
+
             <button
               type="button"
               className="story-quiz-page__submit-button"
               onClick={handleSubmit}
-              disabled={!selectedAnswer}
+              disabled={!selectedAnswer || isSubmitting}
             >
-              {submitLabel}
+              {isSubmitting ? "제출 중..." : "제출하기"}
             </button>
           </section>
         </>
