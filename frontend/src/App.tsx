@@ -14,6 +14,7 @@ import StoryRecommendPage from "./pages/StoryRecommendPage/storyRecommendPage";
 import StoryResultPage from "./pages/StoryResultPage/storyResultPage";
 import StoryReadingPage from "./pages/StoryReadingPage/storyReadingPage";
 import StoryQuizPage from "./pages/StoryQuizPage/storyQuizPage";
+import RealtimeInteractionPage from "./pages/RealtimeInteractionPage/realtimeInteractionPage";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/stories/result" element={<StoryResultPage />} />
         <Route path="/stories/recommend" element={<StoryRecommendPage />} />
         <Route path="/stories/read" element={<StoryReadingPage />} />
+        <Route path="/stories/interaction" element={<RealtimeInteractionPage />} />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
         <Route path="/guardian/children" element={<ChildManagementPage />} />
