@@ -1,0 +1,400 @@
+.realtime-interaction-page {
+  position: relative;
+  width: 100%;
+  min-width: 760px;
+  height: 100%;
+  min-height: 540px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fdffef 0%, #fcffeb 100%);
+  color: #111827;
+}
+
+.realtime-interaction-page > .logo {
+  top: 18px;
+  left: 20px;
+  width: 132px;
+  height: auto;
+  cursor: pointer;
+}
+
+.realtime-interaction-page__progress {
+  position: absolute;
+  top: 49px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.realtime-interaction-page__progress .story-progress-bar {
+  width: min(41vw, 420px);
+}
+
+.realtime-interaction-page__stage {
+  position: absolute;
+  top: 116px;
+  left: 50%;
+  width: min(86vw, 860px);
+  height: min(410px, calc(100vh - 215px));
+  transform: translateX(-50%);
+}
+
+.realtime-interaction-page__bubble {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  width: var(--bubble-width, 58%);
+  min-height: var(--bubble-min-height, 288px);
+  align-items: center;
+  padding: 48px 48px 48px 54px;
+  border-radius: 50%;
+  background: #fff;
+  filter: drop-shadow(0 8px 22px rgba(151, 174, 128, 0.08));
+  transition:
+    width 220ms ease,
+    min-height 220ms ease,
+    padding 220ms ease;
+}
+
+.realtime-interaction-page__bubble--medium {
+  border-radius: 47% / 50%;
+}
+
+.realtime-interaction-page__bubble--long {
+  padding: 44px 54px 44px 58px;
+  border-radius: 44% / 48%;
+}
+
+.realtime-interaction-page__bubble--xlong {
+  padding: 40px 58px 40px 62px;
+  border-radius: 41% / 46%;
+}
+
+.realtime-interaction-page__bubble::after {
+  position: absolute;
+  right: -63px;
+  bottom: 57px;
+  z-index: -1;
+  width: 128px;
+  height: 76px;
+  background: #fff;
+  clip-path: polygon(0 25%, 100% 50%, 12% 100%);
+  content: "";
+}
+
+.realtime-interaction-page__message {
+  max-width: 100%;
+  font-size: clamp(24px, 2.8vw, 32px);
+  font-weight: 500;
+  line-height: 1.42;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.realtime-interaction-page__bubble--medium .realtime-interaction-page__message {
+  font-size: clamp(23px, 2.5vw, 30px);
+}
+
+.realtime-interaction-page__bubble--long .realtime-interaction-page__message {
+  font-size: clamp(21px, 2.2vw, 27px);
+  line-height: 1.38;
+}
+
+.realtime-interaction-page__bubble--xlong .realtime-interaction-page__message {
+  font-size: clamp(19px, 1.95vw, 24px);
+  line-height: 1.34;
+}
+
+.realtime-interaction-page__character-button {
+  position: absolute;
+  right: 2.5%;
+  bottom: 0;
+  width: 27%;
+  min-width: 205px;
+  padding: 0;
+  border: 0;
+  border-radius: 45%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.realtime-interaction-page__character-button:disabled {
+  cursor: default;
+}
+
+.realtime-interaction-page__character-button:focus-visible {
+  outline: 4px solid rgba(23, 166, 228, 0.45);
+  outline-offset: 6px;
+}
+
+.realtime-interaction-page__character.dreamy-character {
+  width: 100%;
+  filter: drop-shadow(0 12px 12px rgba(73, 124, 154, 0.08));
+}
+
+.realtime-interaction-page__controls {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  display: flex;
+  width: min(82vw, 780px);
+  min-height: 70px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+
+.realtime-interaction-page__status {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  max-width: 90%;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #65705f;
+  font-size: 13px;
+  text-align: center;
+  transform: translateX(-50%);
+  backdrop-filter: blur(7px);
+}
+
+.realtime-interaction-page__status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #a7af9f;
+}
+
+.realtime-interaction-page__status-dot--connecting,
+.realtime-interaction-page__status-dot--thinking {
+  background: #f4b83d;
+  animation: realtime-status-pulse 1s ease-in-out infinite;
+}
+
+.realtime-interaction-page__status-dot--asking,
+.realtime-interaction-page__status-dot--feedback {
+  background: #17a6e4;
+  animation: realtime-status-pulse 0.75s ease-in-out infinite;
+}
+
+.realtime-interaction-page__status-dot--listening {
+  background: #ee7795;
+  box-shadow: 0 0 0 4px rgba(238, 119, 149, 0.16);
+}
+
+.realtime-interaction-page__status-dot--complete {
+  background: #64b982;
+}
+
+.realtime-interaction-page__mode {
+  margin-left: 2px;
+  padding-left: 8px;
+  border-left: 1px solid #d9ded4;
+  color: #8a9484;
+  font-size: 11px;
+}
+
+.realtime-interaction-page__start-button,
+.realtime-interaction-page__continue-button,
+.realtime-interaction-page__answer-form button,
+.realtime-interaction-page__replay-button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.realtime-interaction-page__complete-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.realtime-interaction-page__start-button {
+  display: inline-flex;
+  min-width: 190px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: #17a6e4;
+  box-shadow: 0 8px 18px rgba(23, 166, 228, 0.2);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.realtime-interaction-page__start-button span {
+  color: #fff076;
+  font-size: 11px;
+}
+
+.realtime-interaction-page__continue-button {
+  height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(91, 122, 79, 0.1);
+  color: #3d6950;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.realtime-interaction-page__start-button:hover,
+.realtime-interaction-page__continue-button:hover,
+.realtime-interaction-page__answer-form button:hover,
+.realtime-interaction-page__replay-button:hover {
+  transform: translateY(-2px);
+}
+
+.realtime-interaction-page__start-button:focus-visible,
+.realtime-interaction-page__continue-button:focus-visible,
+.realtime-interaction-page__answer-form button:focus-visible,
+.realtime-interaction-page__replay-button:focus-visible {
+  outline: 3px solid rgba(23, 166, 228, 0.32);
+  outline-offset: 3px;
+}
+
+.realtime-interaction-page__answer-form {
+  display: flex;
+  width: min(520px, 72vw);
+  height: 48px;
+  padding: 4px;
+  border: 2px solid #cdebf7;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 7px 18px rgba(91, 122, 79, 0.09);
+}
+
+.realtime-interaction-page__answer-form input {
+  min-width: 0;
+  flex: 1;
+  padding: 0 16px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1a2530;
+  font: inherit;
+  font-size: 15px;
+}
+
+.realtime-interaction-page__answer-form input::placeholder {
+  color: #a5afa2;
+}
+
+.realtime-interaction-page__answer-form button {
+  min-width: 76px;
+  border-radius: 999px;
+  background: #17a6e4;
+  color: #fff;
+  font-weight: 700;
+}
+
+.realtime-interaction-page__answer-form button:disabled {
+  background: #c8d3d6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.realtime-interaction-page__replay-button {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 15px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 5px 14px rgba(91, 122, 79, 0.08);
+  color: #53645a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.realtime-interaction-page__replay-button img {
+  width: 20px;
+  height: 20px;
+}
+
+.realtime-interaction-page__audio {
+  display: none;
+}
+
+.realtime-interaction-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes realtime-status-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@media (max-height: 580px) {
+  .realtime-interaction-page__stage {
+    top: 105px;
+    height: calc(100vh - 195px);
+  }
+
+  .realtime-interaction-page__bubble {
+    min-height: 250px;
+    padding-top: 34px;
+    padding-bottom: 34px;
+  }
+
+  .realtime-interaction-page__bubble--medium,
+  .realtime-interaction-page__bubble--long,
+  .realtime-interaction-page__bubble--xlong {
+    min-height: min(320px, calc(100vh - 210px));
+  }
+
+  .realtime-interaction-page__bubble--long .realtime-interaction-page__message,
+  .realtime-interaction-page__bubble--xlong .realtime-interaction-page__message {
+    font-size: clamp(17px, 2vw, 22px);
+  }
+
+  .realtime-interaction-page__character-button {
+    width: 25%;
+  }
+
+  .realtime-interaction-page__controls {
+    bottom: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .realtime-interaction-page__status-dot,
+  .realtime-interaction-page__start-button,
+  .realtime-interaction-page__continue-button,
+  .realtime-interaction-page__answer-form button,
+  .realtime-interaction-page__replay-button {
+    animation: none;
+    transition: none;
+  }
+}
