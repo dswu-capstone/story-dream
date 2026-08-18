@@ -1,7 +1,9 @@
+export type StoryLanguageCode = "ko" | "en";
+
 export type RecommendedStory = {
   id: number;
   title: string;
-  languageCode: string;
+  languageCode: StoryLanguageCode;
   thumbnailSrc: string;
   categoryLabel: string;
 };
@@ -20,10 +22,17 @@ export type StorySentence = {
   content: string;
 };
 
+export type StoryPage = {
+  pageId: number;
+  pageNum: number;
+  imageUrl: string | null;
+  sentences: StorySentence[];
+};
+
 export type StoryPart = {
   type: string;
   orderNum: number;
-  sentences: StorySentence[];
+  pages: StoryPage[];
 };
 
 export type StoryDetail = {
@@ -33,4 +42,13 @@ export type StoryDetail = {
   level: number;
   parts: StoryPart[];
   illustrationSrc: string;
+};
+
+export type ReadingSession = {
+  readingHistoryId: number;
+  originalStoryId: number;
+  storyTitle: string;
+  selectedLevel: number;
+  currentPart: StoryPart;
+  currentPageIndex: number;
 };

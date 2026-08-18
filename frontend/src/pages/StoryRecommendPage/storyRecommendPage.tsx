@@ -3,10 +3,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyRecommendPage.css";
 
-import { getMockRecommendedStories, getRecommendedStories } from "../../api/story";
+import { getRecommendedStories } from "../../api/story";
 import ArrowButton from "../../components/ArrowButton/arrowButton";
 import Logo from "../../components/Logo/logo";
-import type { RecommendedStory, StoryPageInfo } from "../../types/story";
+import type {
+  RecommendedStory,
+  StoryLanguageCode,
+  StoryPageInfo,
+} from "../../types/story";
+import { clearReadingSession } from "../../utils/readingSession";
 
 const pageTitleSuffix = "에게 추천하는 이야기들";
 const prevButtonLabel = "이전 추천 동화 보기";
@@ -19,6 +24,8 @@ function StoryRecommendPage() {
   const [searchParams] = useSearchParams();
   const childIdParam = searchParams.get("childId");
   const childNameParam = searchParams.get("name");
+  const initialLanguageCode =
+    searchParams.get("languageCode") === "en" ? "en" : "ko";
 
   const storedChildId = localStorage.getItem("selectedChildId");
   const storedChildName = localStorage.getItem("selectedChildName");
@@ -29,15 +36,17 @@ function StoryRecommendPage() {
   const [stories, setStories] = useState<RecommendedStory[]>([]);
   const [pageInfo, setPageInfo] = useState<StoryPageInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [languageCode, setLanguageCode] =
+    useState<StoryLanguageCode>(initialLanguageCode);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const loadStories = async () => {
       if (!childId) {
-        const mockResult = getMockRecommendedStories(currentPage, 4);
-        setStories(mockResult.stories);
-        setPageInfo(mockResult.pageInfo);
+        setStories([]);
+        setPageInfo(null);
+        setErrorMessage("동화를 추천받을 아이를 먼저 선택해 주세요.");
         setIsLoading(false);
         return;
       }
@@ -48,6 +57,7 @@ function StoryRecommendPage() {
       try {
         const result = await getRecommendedStories({
           childId,
+          languageCode,
           page: currentPage,
           size: 4,
         });
@@ -56,16 +66,29 @@ function StoryRecommendPage() {
         setPageInfo(result.pageInfo);
       } catch (error) {
         console.error("추천 동화 조회 오류:", error);
-        const mockResult = getMockRecommendedStories(currentPage, 4);
-        setStories(mockResult.stories);
-        setPageInfo(mockResult.pageInfo);
+        setStories([]);
+        setPageInfo(null);
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "추천 동화 목록을 불러오지 못했습니다.",
+        );
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadStories();
-  }, [childId, currentPage]);
+  }, [childId, currentPage, languageCode]);
+
+  const handleLanguageChange = (nextLanguageCode: StoryLanguageCode) => {
+    if (nextLanguageCode === languageCode) {
+      return;
+    }
+
+    setCurrentPage(0);
+    setLanguageCode(nextLanguageCode);
+  };
 
   const handlePrev = () => {
     if (!pageInfo?.hasPrevious) {
@@ -83,8 +106,15 @@ function StoryRecommendPage() {
     setCurrentPage((prev) => prev + 1);
   };
 
-  const handleStoryClick = (storyId: number) => {
-    navigate(`/stories/read?storyId=${storyId}&level=1`);
+  const handleStoryClick = (story: RecommendedStory) => {
+    clearReadingSession();
+    navigate(`/stories/read?originalStoryId=${story.id}`, {
+      state: {
+        startNewSession: true,
+        childId,
+        storyTitle: story.title,
+      },
+    });
   };
 
   return (
@@ -95,6 +125,37 @@ function StoryRecommendPage() {
         {childName}
         {pageTitleSuffix}
       </h1>
+
+      <div
+        className="story-recommend-page__language-selector"
+        role="group"
+        aria-label="동화 언어 선택"
+      >
+        <button
+          type="button"
+          className={
+            languageCode === "ko"
+              ? "story-recommend-page__language-button story-recommend-page__language-button--active"
+              : "story-recommend-page__language-button"
+          }
+          aria-pressed={languageCode === "ko"}
+          onClick={() => handleLanguageChange("ko")}
+        >
+          한국어
+        </button>
+        <button
+          type="button"
+          className={
+            languageCode === "en"
+              ? "story-recommend-page__language-button story-recommend-page__language-button--active"
+              : "story-recommend-page__language-button"
+          }
+          aria-pressed={languageCode === "en"}
+          onClick={() => handleLanguageChange("en")}
+        >
+          English
+        </button>
+      </div>
 
       {isLoading && (
         <p className="story-recommend-page__status">불러오는 중...</p>
@@ -124,7 +185,7 @@ function StoryRecommendPage() {
                   key={story.id}
                   type="button"
                   className="story-recommend-page__card"
-                  onClick={() => handleStoryClick(story.id)}
+                  onClick={() => handleStoryClick(story)}
                 >
                   <img
                     src={story.thumbnailSrc}

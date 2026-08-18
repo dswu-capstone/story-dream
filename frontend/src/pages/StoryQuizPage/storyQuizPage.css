@@ -12,6 +12,13 @@
   margin-top: 14px;
 }
 
+.story-quiz-page__status {
+  margin-top: 180px;
+  color: var(--color-gray-dark);
+  font-size: 24px;
+  text-align: center;
+}
+
 .story-quiz-page__counter {
   position: absolute;
   top: 34px;
@@ -89,6 +96,11 @@
   color: #1a67d2;
 }
 
+.story-quiz-page__choice:disabled,
+.story-quiz-page__ox-button:disabled {
+  cursor: not-allowed;
+}
+
 .story-quiz-page__ox-button {
   width: 168px;
   height: 104px;
@@ -120,6 +132,13 @@
   font-size: 28px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.story-quiz-page__submit-error {
+  margin-top: 28px;
+  color: #b3261e;
+  font-size: 17px;
+  text-align: center;
 }
 
 .story-quiz-page__submit-button:disabled {

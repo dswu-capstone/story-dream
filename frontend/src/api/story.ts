@@ -4,13 +4,14 @@ import readingBookCover from "../assets/reading_book.svg";
 import type {
   RecommendedStory,
   StoryDetail,
+  StoryLanguageCode,
   StoryPageInfo,
 } from "../types/story";
 
 type StorySummaryResponse = {
   originalStoryId: number;
   title: string;
-  languageCode: string;
+  languageCode?: StoryLanguageCode;
 };
 
 type StoryRecommendationApiResponse = {
@@ -27,10 +28,17 @@ type StorySentenceResponse = {
   content: string;
 };
 
+type StoryPageResponse = {
+  pageId: number;
+  pageNum: number;
+  imageUrl: string | null;
+  sentences: StorySentenceResponse[];
+};
+
 type StoryPartResponse = {
   type: string;
   orderNum: number;
-  sentences: StorySentenceResponse[];
+  pages: StoryPageResponse[];
 };
 
 type StoryDetailApiResponse = {
@@ -47,7 +55,7 @@ type StoryDetailApiResponse = {
 
 type GetRecommendedStoriesParams = {
   childId: number;
-  languageCode?: string;
+  languageCode?: StoryLanguageCode;
   page?: number;
   size?: number;
 };
@@ -97,39 +105,6 @@ const mockStoryTitles = [
   "별빛 마을의 비밀",
 ] as const;
 
-export function getMockRecommendedStories(
-  page = 0,
-  size = 4,
-): RecommendedStoriesResult {
-  const totalElements = mockStoryTitles.length;
-  const totalPages = Math.ceil(totalElements / size);
-  const startIndex = page * size;
-  const visibleTitles = mockStoryTitles.slice(startIndex, startIndex + size);
-
-  return {
-    stories: visibleTitles.map((title, index) => {
-      const placeholder =
-        storyPlaceholders[(startIndex + index) % storyPlaceholders.length];
-
-      return {
-        id: startIndex + index + 1,
-        title,
-        languageCode: "ko",
-        thumbnailSrc: placeholder.thumbnailSrc,
-        categoryLabel: placeholder.categoryLabel,
-      };
-    }),
-    pageInfo: {
-      page,
-      size,
-      totalPages,
-      totalElements,
-      hasNext: page < totalPages - 1,
-      hasPrevious: page > 0,
-    },
-  };
-}
-
 export function getMockStoryDetail(originalStoryId = 1): StoryDetail {
   const title = mockStoryTitles[(originalStoryId - 1) % mockStoryTitles.length];
 
@@ -144,46 +119,67 @@ export function getMockStoryDetail(originalStoryId = 1): StoryDetail {
       {
         type: "서론",
         orderNum: 1,
-        sentences: [
+        pages: [
           {
-            sentenceIdx: 1,
-            content: "돌리가 엉엉 울었어요.",
-          },
-          {
-            sentenceIdx: 2,
-            content: "그리고 엄마 손을 꼭 잡았어요.",
+            pageId: 1,
+            pageNum: 1,
+            imageUrl: null,
+            sentences: [
+              {
+                sentenceIdx: 1,
+                content: "돌리가 엉엉 울었어요.",
+              },
+              {
+                sentenceIdx: 2,
+                content: "그리고 엄마 손을 꼭 잡았어요.",
+              },
+            ],
           },
         ],
       },
       {
         type: "본론",
         orderNum: 2,
-        sentences: [
+        pages: [
           {
-            sentenceIdx: 1,
-            content: "엄마는 돌리 옆에 쪼그려 앉았어요.",
-          },
-          {
-            sentenceIdx: 2,
-            content: "그리고 돌리의 젖은 앞머리를 살며시 넘겨 주었어요.",
-          },
-          {
-            sentenceIdx: 3,
-            content: '"많이 속상했구나."',
+            pageId: 2,
+            pageNum: 1,
+            imageUrl: null,
+            sentences: [
+              {
+                sentenceIdx: 1,
+                content: "엄마는 돌리 옆에 쪼그려 앉았어요.",
+              },
+              {
+                sentenceIdx: 2,
+                content: "그리고 돌리의 젖은 앞머리를 살며시 넘겨 주었어요.",
+              },
+              {
+                sentenceIdx: 3,
+                content: '"많이 속상했구나."',
+              },
+            ],
           },
         ],
       },
       {
         type: "결론",
         orderNum: 3,
-        sentences: [
+        pages: [
           {
-            sentenceIdx: 1,
-            content: "돌리는 조금씩 마음이 편안해졌어요.",
-          },
-          {
-            sentenceIdx: 2,
-            content: "그리고 다시 환하게 웃을 수 있었답니다.",
+            pageId: 3,
+            pageNum: 1,
+            imageUrl: null,
+            sentences: [
+              {
+                sentenceIdx: 1,
+                content: "돌리는 조금씩 마음이 편안해졌어요.",
+              },
+              {
+                sentenceIdx: 2,
+                content: "그리고 다시 환하게 웃을 수 있었답니다.",
+              },
+            ],
           },
         ],
       },
@@ -228,12 +224,16 @@ export async function getRecommendedStories({
 
   return {
     stories: result.data.stories.map((story, index) => {
+      const resolvedLanguageCode = story.languageCode ?? languageCode;
       const placeholder = storyPlaceholders[index % storyPlaceholders.length];
 
       return {
         id: story.originalStoryId,
-        title: story.title,
-        languageCode: story.languageCode,
+        title:
+          resolvedLanguageCode === "en"
+            ? story.title.replace(/^\d+_/, "")
+            : story.title,
+        languageCode: resolvedLanguageCode,
         thumbnailSrc: placeholder.thumbnailSrc,
         categoryLabel: placeholder.categoryLabel,
       };
