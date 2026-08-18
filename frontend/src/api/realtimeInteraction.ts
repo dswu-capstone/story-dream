@@ -19,6 +19,9 @@ export type RealtimeSession = {
     realtime: boolean;
     narration: boolean;
   };
+  focus?: {
+    source?: "browser" | "camera";
+  };
 };
 
 export type RealtimeReadingState = {

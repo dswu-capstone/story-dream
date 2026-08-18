@@ -3,7 +3,7 @@ camera_focus.py (story-display edition)
 
 YOLO pose focus detection for the story reading session. Watches the child
 through the Pi camera / USB webcam and classifies attention into
-front / side / back / absent. When side/back or absent persists for 10s,
+front / side / back / absent. When side/back or absent persists for 30s,
 POSTs a focus event to the story-display server, which relays it to the
 browser via SSE -- the browser then pauses the narration and runs the
 character quiz cycle.
@@ -51,8 +51,8 @@ SMOOTH_WINDOW = 8
 SIDE_RATIO_THRESHOLD = 0.15
 BACK_FACE_POINTS_MAX = int(os.environ.get("BACK_FACE_POINTS_MAX", "2"))
 
-FOCUS_LOST_THRESHOLD = float(os.environ.get("FOCUS_LOST_THRESHOLD", "10"))
-ABSENT_THRESHOLD = float(os.environ.get("ABSENT_THRESHOLD", "10"))
+FOCUS_LOST_THRESHOLD = float(os.environ.get("FOCUS_LOST_THRESHOLD", "30"))
+ABSENT_THRESHOLD = float(os.environ.get("ABSENT_THRESHOLD", "30"))
 HEARTBEAT_INTERVAL = 5.0
 
 APP_SERVER_URL = os.environ.get("APP_SERVER_URL", "http://127.0.0.1:4000")

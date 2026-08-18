@@ -2,7 +2,7 @@
  * BrowserFocus — 사용자 PC 웹캠으로 집중 감지 (camera_focus.py 의 브라우저판).
  *
  * 웹캠 프레임을 주기적으로 서버(/api/detect-pose)에 보내 YOLO 로 front/side/back/absent
- * 로 분류받고, 여기서 camera_focus.py 와 같은 시간 상태머신(스무딩 + 10초 임계)을 돌려
+ * 로 분류받고, 여기서 camera_focus.py 와 같은 시간 상태머신(스무딩 + 30초 임계)을 돌려
  * focus_lost / absent / focus_recovered / focus_state 이벤트를 서버(/api/focus)로 POST 한다.
  * 그 뒤 흐름(SSE → reader.onFocusSignal → dreamy 캐릭터)은 서버 카메라 모드와 동일하다.
  *
@@ -10,8 +10,8 @@
  */
 
 const SMOOTH_WINDOW = 8;
-const FOCUS_LOST_THRESHOLD = 10; // 초
-const ABSENT_THRESHOLD = 10; // 초
+const FOCUS_LOST_THRESHOLD = 30; // 초
+const ABSENT_THRESHOLD = 30; // 초
 const HEARTBEAT_INTERVAL = 5; // 초
 const DETECT_INTERVAL_MS = 350; // ≈3fps
 const CAPTURE_WIDTH = 256;
