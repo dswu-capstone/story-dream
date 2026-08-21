@@ -1,6 +1,6 @@
 import { realtimeInteractionApiBase } from "./realtimeInteraction";
 
-export const FOCUS_INTERACTION_THRESHOLD_SECONDS = 30;
+export const FOCUS_INTERACTION_THRESHOLD_SECONDS = 15;
 
 export type FocusSignal = {
   id?: string;
