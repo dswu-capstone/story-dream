@@ -3,7 +3,14 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyReadingPage.css";
 
+import {
+  BrowserFocusMonitor,
+  FOCUS_INTERACTION_THRESHOLD_SECONDS,
+  subscribeFocusSignals,
+  type FocusSignal,
+} from "../../api/focusInteraction";
 import { getNextReadingPart, startReading } from "../../api/reading";
+import { getRealtimeSession } from "../../api/realtimeInteraction";
 import readingPlaceholder from "../../assets/reading_book.svg";
 import replayIcon from "../../assets/mingcute_voice-line.svg";
 import Logo from "../../components/Logo/logo";
@@ -46,6 +53,7 @@ function StoryReadingPage() {
   const requestedLevel = locationState?.selectedLevel;
 
   const initializationStarted = useRef(false);
+  const focusInteractionTriggered = useRef(false);
   const [retryCount, setRetryCount] = useState(0);
   const [readingSession, setReadingSession] = useState<ReadingSession | null>(
     null,
@@ -159,6 +167,64 @@ function StoryReadingPage() {
   const pages = currentPart?.pages ?? [];
   const currentPageIndex = readingSession?.currentPageIndex ?? 0;
   const currentPage = pages[currentPageIndex];
+
+  useEffect(() => {
+    if (!readingSession?.readingHistoryId || isLoading || errorMessage) return;
+
+    const subscribedAt = Date.now();
+    const focusMonitor = new BrowserFocusMonitor();
+    let disposed = false;
+
+    const handleFocusSignal = (signal: FocusSignal) => {
+      if (
+        focusInteractionTriggered.current ||
+        !["focus_lost", "absent"].includes(signal.eventType)
+      ) {
+        return;
+      }
+
+      const durationMatch = signal.detail?.match(/(?:distracted|absent)_for=(\d+(?:\.\d+)?)s/);
+      const duration = durationMatch ? Number(durationMatch[1]) : null;
+      if (
+        duration !== null &&
+        duration < FOCUS_INTERACTION_THRESHOLD_SECONDS
+      ) {
+        return;
+      }
+
+      const signalTime = signal.timestamp ? Date.parse(signal.timestamp) : NaN;
+      if (Number.isFinite(signalTime) && signalTime < subscribedAt - 2_000) {
+        return;
+      }
+
+      focusInteractionTriggered.current = true;
+      window.speechSynthesis?.cancel();
+      navigate("/stories/interaction", {
+        state: {
+          focusTrigger: signal.eventType,
+          focusDurationSeconds:
+            duration ?? FOCUS_INTERACTION_THRESHOLD_SECONDS,
+        },
+      });
+    };
+
+    const unsubscribe = subscribeFocusSignals(handleFocusSignal);
+    void getRealtimeSession()
+      .then((session) => {
+        if (!disposed && session.focus?.source !== "camera") {
+          return focusMonitor.start();
+        }
+      })
+      .catch((error) => {
+        console.warn("집중도 감지 서버에 연결하지 못했습니다:", error);
+      });
+
+    return () => {
+      disposed = true;
+      unsubscribe();
+      focusMonitor.stop();
+    };
+  }, [errorMessage, isLoading, navigate, readingSession?.readingHistoryId]);
 
   const moveToPage = (pageIndex: number) => {
     setReadingSession((currentSession) => {
