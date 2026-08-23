@@ -12,6 +12,7 @@ type StorySummaryResponse = {
   originalStoryId: number;
   title: string;
   languageCode?: StoryLanguageCode;
+  tags?: string[];
 };
 
 type StoryRecommendationApiResponse = {
@@ -65,6 +66,10 @@ type RecommendedStoriesResult = {
   pageInfo: StoryPageInfo;
 };
 
+function normalizeStoryLabel(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
 const storyIllustrations = [
   characterCover,
   readingBookCover,
@@ -74,19 +79,15 @@ const storyIllustrations = [
 const storyPlaceholders = [
   {
     thumbnailSrc: characterCover,
-    categoryLabel: "공룡",
   },
   {
     thumbnailSrc: readingBookCover,
-    categoryLabel: "우주",
   },
   {
     thumbnailSrc: backgroundHills,
-    categoryLabel: "모험",
   },
   {
     thumbnailSrc: readingBookCover,
-    categoryLabel: "일상",
   },
 ] as const;
 
@@ -226,16 +227,25 @@ export async function getRecommendedStories({
     stories: result.data.stories.map((story, index) => {
       const resolvedLanguageCode = story.languageCode ?? languageCode;
       const placeholder = storyPlaceholders[index % storyPlaceholders.length];
+      const title =
+        resolvedLanguageCode === "en"
+          ? story.title.replace(/^\d+_/, "")
+          : story.title;
+      const normalizedTitle = normalizeStoryLabel(title);
+      const tagLabel =
+        story.tags
+          ?.map((tag) => tag.trim())
+          .find(
+            (tag) =>
+              tag.length > 0 && normalizeStoryLabel(tag) !== normalizedTitle,
+          ) ?? "";
 
       return {
         id: story.originalStoryId,
-        title:
-          resolvedLanguageCode === "en"
-            ? story.title.replace(/^\d+_/, "")
-            : story.title,
+        title,
         languageCode: resolvedLanguageCode,
         thumbnailSrc: placeholder.thumbnailSrc,
-        categoryLabel: placeholder.categoryLabel,
+        tagLabel,
       };
     }),
     pageInfo: result.data.pageInfo,

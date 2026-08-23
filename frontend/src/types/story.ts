@@ -5,7 +5,7 @@ export type RecommendedStory = {
   title: string;
   languageCode: StoryLanguageCode;
   thumbnailSrc: string;
-  categoryLabel: string;
+  tagLabel: string;
 };
 
 export type StoryPageInfo = {
