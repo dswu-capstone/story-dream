@@ -9,7 +9,8 @@ public record StoryRecommendationResponse (
 ) {
     public record StorySummary(
             Integer originalStoryId,
-            String title
+            String title,
+            List<String> tags
     ) { }
 
     public record PageInfo(

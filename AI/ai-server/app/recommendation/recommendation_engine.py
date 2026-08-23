@@ -94,6 +94,7 @@ class ScoredStory:
     coverage: float
     matches: tuple[InterestMatch, ...]
     unmatched_interests: tuple[str, ...]
+    tags: tuple[str, ...] = ()
 
 
 class RecommendationScorer:
@@ -190,6 +191,7 @@ class RecommendationScorer:
             coverage=coverage,
             matches=tuple(matches),
             unmatched_interests=tuple(unmatched_interests),
+            tags=self._story_tags(story),
         )
 
     def _calculate_match(
@@ -263,6 +265,14 @@ class RecommendationScorer:
             coverage=0.0,
             matches=(),
             unmatched_interests=tuple(interest.text for interest in interests),
+            tags=self._story_tags(story),
+        )
+
+    def _story_tags(self, story: StoryCandidate) -> tuple[str, ...]:
+        return tuple(
+            item.text
+            for item in self._deduplicate_metadata(story.metadata)
+            if item.metadata_type == "TAG"
         )
 
 

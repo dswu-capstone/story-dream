@@ -197,9 +197,11 @@ function StoryRecommendPage() {
                     <strong className="story-recommend-page__card-title">
                       {story.title}
                     </strong>
-                    <span className="story-recommend-page__chip">
-                      {story.categoryLabel}
-                    </span>
+                    {story.tagLabel && (
+                      <span className="story-recommend-page__chip">
+                        {story.tagLabel}
+                      </span>
+                    )}
                   </div>
                 </button>
               ))}

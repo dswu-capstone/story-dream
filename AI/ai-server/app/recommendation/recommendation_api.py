@@ -72,6 +72,7 @@ class StoryRecommendationResponse(BaseModel):
     title: str
     language_code: str = Field(alias="languageCode")
     score: float
+    tags: list[str] = Field(default_factory=list)
 
 
 class RecommendationResponse(BaseModel):
@@ -201,6 +202,7 @@ def _serialize_story(story: ScoredStory) -> StoryRecommendationResponse:
         title=story.title,
         languageCode=story.language_code,
         score=round(story.score, 6),
+        tags=list(story.tags),
     )
 
 
