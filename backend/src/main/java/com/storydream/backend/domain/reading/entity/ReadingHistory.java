@@ -69,4 +69,13 @@ public class ReadingHistory {
         this.status = ReadingStatus.COMPLETED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void complete(Integer lastSentenceIdx) {
+        this.status = ReadingStatus.COMPLETED;
+        this.endedAt = LocalDateTime.now();
+        if (lastSentenceIdx != null) {
+            this.lastSentenceIdx = lastSentenceIdx;
+        }
+        this.updatedAt = LocalDateTime.now();
+    }
 }

@@ -1,40 +1,78 @@
 #!/usr/bin/env bash
-# Story Dream 시작 (라즈베리파이 디스플레이용).
-#
-#   OPENAI_API_KEY=... FISH_AUDIO_API_KEY=... ./start.sh
-#
-# 하는 일:
-#   1. 통합 앱 서버(:4000) 시작 -> camera_focus.py 자동 스폰
-#   2. 파이 화면(:0)에 크로미움 키오스크 실행
-#      화면 흐름: 목소리 등록(등록돼 있으면 넘어가기) -> 서재 -> 책 선택
-#                 -> 나레이션 생성(버퍼링) -> 리더(+집중 감지 퀴즈)
-#   3. 브라우저를 닫으면 서버/카메라도 함께 종료
-#
-# 옵션 env:
-#   NO_BROWSER=1        키오스크 브라우저 자동 실행 끄기 (서버만)
-#   FOCUS_SOURCE=browser  집중 감지 소스 (기본): 사용자 PC 웹캠을 브라우저에서 사용
-#   FOCUS_SOURCE=camera   서버/파이에 연결된 카메라(camera_focus.py) 사용
-#   CAMERA_FOCUS=0        (camera 모드일 때) 카메라 집중 감지 끄기
-#   CHILD_NAME / CHARACTER_NAME / PORT 등은 app/README.md 참고
 set -e
 
-# ─────────────────────────────────────────────────────────────
-# API 키: 아래 따옴표 안에 직접 넣어두면 매번 입력하지 않아도 된다.
-# (환경변수로 넘기면 그 값이 우선한다:  OPENAI_API_KEY=... ./start.sh)
-# ─────────────────────────────────────────────────────────────
-OPENAI_API_KEY="${OPENAI_API_KEY:-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}"          # <- 여기에 OpenAI 키
-FISH_AUDIO_API_KEY="${FISH_AUDIO_API_KEY:__pltFdrZLJrF9XqxQioTRafwajhwHyPPsFU8tdtvaEyJ}"  # <- 여기에 Fish Audio 키
-export OPENAI_API_KEY FISH_AUDIO_API_KEY
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env}"
 
-cd "$(dirname "$0")/app"
+load_env_file() {
+  local file="$1" line key val
+  [ -f "$file" ] || return 1
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"                              # 윈도우 개행 제거
+    line="${line#"${line%%[![:space:]]*}"}"           # 앞 공백 제거
+    line="${line%"${line##*[![:space:]]}"}"           # 뒤 공백 제거
+
+    [ -z "$line" ] && continue
+    [ "${line:0:1}" = "#" ] && continue
+
+    line="${line#export }"
+    case "$line" in *=*) ;; *) continue ;; esac
+
+    key="${line%%=*}"
+    val="${line#*=}"
+    key="${key//[[:space:]]/}"
+
+    # 유효한 변수명이 아니면 무시
+    case "$key" in
+      [A-Za-z_]*) ;;
+      *) continue ;;
+    esac
+
+    val="${val#"${val%%[![:space:]]*}"}"              # 값 앞 공백 제거
+    case "$val" in
+      \"*) val="${val#\"}"; val="${val%%\"*}" ;;      # "값"  # 주석
+      \'*) val="${val#\'}"; val="${val%%\'*}" ;;      # '값'  # 주석
+      *)   val="${val%%#*}"                           # 값 # 주석
+           val="${val%"${val##*[![:space:]]}"}" ;;
+    esac
+
+    [ -z "$val" ] && continue
+    if [ -n "${!key:-}" ]; then continue; fi          # 환경변수 우선
+
+    export "$key=$val"
+  done < "$file"
+}
+
+if load_env_file "$ENV_FILE"; then
+  echo "[info] .env 로드: $ENV_FILE"
+else
+  echo "[warn] .env 를 찾지 못했습니다: $ENV_FILE" >&2
+  echo "[warn] 예시)  OPENAI_API_KEY=sk-proj-xxxx" >&2
+fi
+
+# 값이 셸 문법/플레이스홀더로 남아있으면 경고
+check_key() {
+  local name="$1" v="${!1:-}"
+  case "$v" in
+    *'${'*|*'<-'*|'{}'|'여기'*)
+      echo "[warn] $name 값이 실제 키가 아닌 것 같습니다: '$v'" >&2
+      echo "[warn] .env 에는 따옴표/치환 없이 '$name=실제키' 형태로 적어주세요." >&2
+      ;;
+  esac
+}
+check_key OPENAI_API_KEY
+check_key FISH_AUDIO_API_KEY
+
+cd "$ROOT_DIR/app"
 
 PORT="${PORT:-4000}"
 URL="http://localhost:${PORT}"
 
-if [ -z "$OPENAI_API_KEY" ]; then
+if [ -z "${OPENAI_API_KEY:-}" ]; then
   echo "[warn] OPENAI_API_KEY 가 없어 퀴즈 캐릭터는 비활성화됩니다." >&2
 fi
-if [ -z "$FISH_AUDIO_API_KEY" ]; then
+if [ -z "${FISH_AUDIO_API_KEY:-}" ]; then
   echo "[warn] FISH_AUDIO_API_KEY 가 없어 나레이션 생성은 비활성화됩니다." >&2
 fi
 
@@ -47,7 +85,7 @@ for _ in $(seq 1 40); do
   sleep 0.25
 done
 
-if [ "$NO_BROWSER" = "1" ]; then
+if [ "${NO_BROWSER:-}" = "1" ]; then
   echo "[info] NO_BROWSER=1 -> 브라우저 없이 서버만 실행 중: $URL"
   wait $SERVER_PID
   exit 0
@@ -75,5 +113,3 @@ DISPLAY="${DISPLAY:-:0}" "$BROWSER" \
   --autoplay-policy=no-user-gesture-required \
   --use-fake-ui-for-media-stream \
   --check-for-update-interval=31536000
-
-# 브라우저가 닫히면 trap이 서버(및 camera_focus.py)를 정리한다
