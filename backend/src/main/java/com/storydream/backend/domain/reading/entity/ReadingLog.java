@@ -1,5 +1,7 @@
 package com.storydream.backend.domain.reading.entity;
 
+//import com.storydream.backend.global.common.PartType;
+//import com.storydream.backend.global.converter.PartTypeConverter;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -22,6 +24,7 @@ public class ReadingLog {
     @JoinColumn(name = "reading_history_id", nullable = false)
     private ReadingHistory readingHistory;
 
+//    @Convert(converter = PartTypeConverter.class)
     @Column(name = "part_type", nullable = false, length = 20)
     private String partType;
 
