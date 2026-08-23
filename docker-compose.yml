@@ -1,0 +1,14 @@
+name: storydream
+
+services:
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        image: storydream-backend # 빌드한 이미지 이름 지정(storydream-backend:latest)
+        container_name: backend
+        ports:
+            - "8080:8080"
+        env_file:
+            - ./backend/.env
+        restart: unless-stopped

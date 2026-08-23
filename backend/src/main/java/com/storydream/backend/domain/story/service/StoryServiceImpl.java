@@ -118,7 +118,8 @@ public class StoryServiceImpl implements StoryService {
                 storyPage.getContent().stream()
                         .map(story -> new StoryRecommendationResponse.StorySummary(
                                 story.originalStoryId(),
-                                story.title()
+                                story.title(),
+                                story.tags()
                         ))
                         .toList();
 
