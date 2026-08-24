@@ -1,14 +1,36 @@
 name: storydream
 
 services:
+    ai-server:
+        build:
+            context: ./AI/ai-server
+            dockerfile: Dockerfile
+        image: storydream-ai:latest
+        container_name: storydream-ai
+        env_file:
+            - ./AI/ai-server/.env
+        expose: # 포트를 Compose 내부에만 공개
+            - "8000"
+        healthcheck:
+            test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
+            interval: 30s
+            timeout: 5s
+            retries: 5
+        restart: unless-stopped
+
     backend:
         build:
             context: ./backend
             dockerfile: Dockerfile
-        image: storydream-backend # 빌드한 이미지 이름 지정(storydream-backend:latest)
+        image: storydream-backend:latest # 빌드한 이미지 이름 지정(storydream-backend:latest)
         container_name: backend
         ports:
             - "8080:8080"
         env_file:
             - ./backend/.env
+        environment:
+            AI_SERVER_BASE_URL: http://ai-server:8000 # application.yaml에 환경변수 값 주입
+        depends_on:
+            ai-server:
+                condition: service_healthy
         restart: unless-stopped
