@@ -261,7 +261,7 @@ public class StoryServiceImpl implements StoryService {
         return new StoryPageResponse(
                 page.getId(),
                 page.getPageNum(),
-                page.getImageUrl(),
+                page.getImageKey(),
                 sentences
         );
     }

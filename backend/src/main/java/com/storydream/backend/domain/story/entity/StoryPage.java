@@ -39,8 +39,8 @@ public class StoryPage {
     @Column(name = "end_sentence_idx", nullable = false)
     private Integer endSentenceIdx;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @Column(name = "image_key")
+    private String imageKey;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
