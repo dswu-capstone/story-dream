@@ -32,3 +32,7 @@ story:
 ai:
   server:
     base-url: ${AI_SERVER_BASE_URL:http://localhost:8000} # ${변수명:기본값}
+
+aws:
+  s3:
+    bucket: project4-37-sydney-s3-231629457672-ap-southeast-2-an

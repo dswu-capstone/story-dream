@@ -48,6 +48,8 @@ dependencies {
 
 	// 스프링 캐시
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+	implementation 'software.amazon.awssdk:s3:2.54.4'
 }
 
 tasks.named('test') {
