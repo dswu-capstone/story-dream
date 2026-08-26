@@ -7,8 +7,6 @@ import com.storydream.backend.domain.reading.entity.ReadingHistory;
 import com.storydream.backend.domain.reading.entity.ReadingLog;
 import com.storydream.backend.domain.reading.repository.ReadingHistoryRepository;
 import com.storydream.backend.domain.reading.repository.ReadingLogRepository;
-import com.storydream.backend.domain.story.dto.StoryDetailResponse;
-import com.storydream.backend.domain.story.dto.StoryPartResponse;
 import com.storydream.backend.domain.story.entity.*;
 import com.storydream.backend.domain.story.repository.*;
 import com.storydream.backend.domain.story.service.StoryService;
@@ -171,7 +169,7 @@ public class ReadingServiceImpl implements ReadingService {
                     return new PageResponse(
                             page.getId(),
                             page.getPageNum(),
-                            page.getImageUrl(),
+                            page.getImageKey(),
                             sentenceResponses
                     );
                 })
@@ -357,7 +355,7 @@ public class ReadingServiceImpl implements ReadingService {
                     return new PageResponse(
                             page.getId(),
                             page.getPageNum(),
-                            page.getImageUrl(),
+                            page.getImageKey(),
                             sentenceResponses
                     );
                 })
