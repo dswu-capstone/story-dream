@@ -39,6 +39,9 @@ public class StoryPage {
     @Column(name = "end_sentence_idx", nullable = false)
     private Integer endSentenceIdx;
 
+    @Column(name = "audio_key")
+    private String audioKey;
+
     @Column(name = "image_key")
     private String imageKey;
 
