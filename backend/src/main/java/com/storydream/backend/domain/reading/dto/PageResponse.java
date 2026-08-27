@@ -7,6 +7,7 @@ public record PageResponse(
         Integer pageId,
         Integer pageNum,
         String imageUrl,
+        String audioUrl,
         List<SentenceResponse> sentences
 ) {
 }

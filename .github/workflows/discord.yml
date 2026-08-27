@@ -38,15 +38,16 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "push" ]; then
             MESSAGE="📌 Push 발생
-          브랜치: $GITHUB_REF_NAME
-          커밋 메시지: $PUSH_COMMIT_MSG
-          URL: $PUSH_COMMIT_URL"
+              브랜치: $GITHUB_REF_NAME
+              커밋 메시지: $PUSH_COMMIT_MSG
+              URL: $PUSH_COMMIT_URL"
+          
           else
             MESSAGE="🔀 PR 발생
-          작성자: $PR_USER
-          브랜치: $PR_HEAD → $PR_BASE
-          제목: $PR_TITLE
-          URL: $PR_URL"
+              작성자: $PR_USER
+              브랜치: $PR_HEAD → $PR_BASE
+              제목: $PR_TITLE
+              URL: $PR_URL"
           fi 
           
           PAYLOAD=$(jq -n --arg msg "$MESSAGE" '{content: $msg}')

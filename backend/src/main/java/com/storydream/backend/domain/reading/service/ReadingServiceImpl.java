@@ -12,6 +12,7 @@ import com.storydream.backend.domain.story.repository.*;
 import com.storydream.backend.domain.story.service.StoryService;
 import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
+import com.storydream.backend.global.storage.FileUrlProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class ReadingServiceImpl implements ReadingService {
     private final StoryPartRepository storyPartRepository;
     private final StorySentenceRepository storySentenceRepository;
 
-    private final StoryService storyService;
+    private final FileUrlProvider fileUrlProvider;
 
     @Value("${story.dataset.ko.generator-type}")
     private String koGeneratorType;
@@ -117,7 +118,7 @@ public class ReadingServiceImpl implements ReadingService {
                 .level(defaultLevel)
                 .build();
 
-        ReadingLog readinglog = readingLogRepository.save(readingLog);
+        readingLogRepository.save(readingLog);
 
         // 서론 페이지 전체 조회
         List<StoryPage> pages = storyPageRepository
@@ -146,34 +147,7 @@ public class ReadingServiceImpl implements ReadingService {
                         endSentenceIdx
                 );
 
-        // 페이지별로 문장을 매핑해서 PageResponse 생성
-        List<PageResponse> pageResponses = pages.stream()
-                .map(page -> {
-
-                    List<SentenceResponse> sentenceResponses =
-                            allSentences.stream()
-                                    .filter(sentence ->
-                                            sentence.getSentenceIdx()
-                                                    >= page.getStartSentenceIdx()
-                                                    &&
-                                                    sentence.getSentenceIdx()
-                                                            <= page.getEndSentenceIdx()
-                                    )
-                                    .map(sentence ->
-                                            new SentenceResponse(
-                                                    sentence.getSentenceIdx(),
-                                                    sentence.getContent()
-                                            )
-                                    )
-                                    .toList();
-                    return new PageResponse(
-                            page.getId(),
-                            page.getPageNum(),
-                            page.getImageKey(),
-                            sentenceResponses
-                    );
-                })
-                .toList();
+        List<PageResponse> pageResponses = createPageResponses(pages, allSentences);
 
         // 최종 응답
         return new ReadingStartResponse(
@@ -331,10 +305,25 @@ public class ReadingServiceImpl implements ReadingService {
                         endSentenceIdx
                 );
 
-        // 페이지별 문장 매핑
-        List<PageResponse> pageResponses = pages.stream()
+        List<PageResponse> pageResponses = createPageResponses(pages, allSentences);
+        // 최종 응답
+        return new NextPartResponse(
+                storyPart.getType(),
+                storyPart.getOrderNum(),
+                selectedLevel,
+                pageResponses
+        );
+    }
+
+
+    private List<PageResponse> createPageResponses(
+            List<StoryPage> pages,
+            List<StorySentence> allSentences
+    ) {
+        return pages.stream()
                 .map(page -> {
 
+                    // 해당 페이지 범위의 문장만 추출
                     List<SentenceResponse> sentenceResponses =
                             allSentences.stream()
                                     .filter(sentence ->
@@ -352,20 +341,28 @@ public class ReadingServiceImpl implements ReadingService {
                                     )
                                     .toList();
 
+                    // 이미지 URL 생성
+                    String imageUrl = generateUrl(page.getImageKey());
+
+                    // 음성 URL 생성
+                    String audioUrl = generateUrl(page.getAudioKey());
+
                     return new PageResponse(
                             page.getId(),
                             page.getPageNum(),
-                            page.getImageKey(),
+                            imageUrl,
+                            audioUrl,
                             sentenceResponses
                     );
                 })
                 .toList();
-        // 최종 응답
-        return new NextPartResponse(
-                storyPart.getType(),
-                storyPart.getOrderNum(),
-                selectedLevel,
-                pageResponses
-        );
+    }
+
+    private String generateUrl(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return null;
+        }
+
+        return fileUrlProvider.generateUrl(objectKey);
     }
 }
