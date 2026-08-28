@@ -26,6 +26,7 @@ export type StoryPage = {
   pageId: number;
   pageNum: number;
   imageUrl: string | null;
+  audioUrl?: string | null;
   sentences: StorySentence[];
 };
 

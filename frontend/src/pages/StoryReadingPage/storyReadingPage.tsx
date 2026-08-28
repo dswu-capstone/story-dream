@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyReadingPage.css";
@@ -12,7 +12,7 @@ import {
 import { getNextReadingPart, startReading } from "../../api/reading";
 import { getRealtimeSession } from "../../api/realtimeInteraction";
 import readingPlaceholder from "../../assets/reading_book.svg";
-import replayIcon from "../../assets/mingcute_voice-line.svg";
+import audioIcon from "../../assets/mingcute_voice-line.svg";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
 import type { ReadingSession } from "../../types/story";
@@ -54,6 +54,7 @@ function StoryReadingPage() {
 
   const initializationStarted = useRef(false);
   const focusInteractionTriggered = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [readingSession, setReadingSession] = useState<ReadingSession | null>(
     null,
@@ -168,6 +169,23 @@ function StoryReadingPage() {
   const currentPageIndex = readingSession?.currentPageIndex ?? 0;
   const currentPage = pages[currentPageIndex];
 
+  const stopAudio = useCallback(() => {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    audioRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    return stopAudio;
+  }, [currentPage?.audioUrl, currentPage?.pageId, stopAudio]);
+
   useEffect(() => {
     if (!readingSession?.readingHistoryId || isLoading || errorMessage) return;
 
@@ -273,17 +291,29 @@ function StoryReadingPage() {
     });
   };
 
-  const handleReplay = () => {
-    if (!currentPage || !("speechSynthesis" in window)) {
+  const handleAudio = () => {
+    const audioUrl = currentPage?.audioUrl?.trim();
+
+    if (!audioUrl) {
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(
-      currentPage.sentences.map((sentence) => sentence.content).join(" "),
-    );
-    utterance.lang = "ko-KR";
-    window.speechSynthesis.speak(utterance);
+    stopAudio();
+
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    audio.onended = () => {
+      if (audioRef.current === audio) {
+        stopAudio();
+      }
+    };
+
+    void audio.play().catch((error) => {
+      if (audioRef.current === audio) {
+        stopAudio();
+      }
+      console.warn("동화 음성을 재생하지 못했습니다.", error);
+    });
   };
 
   return (
@@ -299,17 +329,17 @@ function StoryReadingPage() {
 
       <button
         type="button"
-        className="story-reading-page__replay-button"
-        onClick={handleReplay}
+        className="story-reading-page__audio-button"
+        onClick={handleAudio}
         disabled={!currentPage}
       >
         <img
-          src={replayIcon}
+          src={audioIcon}
           alt=""
           aria-hidden="true"
-          className="story-reading-page__replay-icon"
+          className="story-reading-page__audio-icon"
         />
-        다시 듣기
+        음성 듣기
       </button>
 
       {isLoading && (
