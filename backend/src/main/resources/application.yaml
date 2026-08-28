@@ -23,7 +23,7 @@ jwt:
 story:
   dataset:
     ko:
-      generator-type: GPT
+      generator-type: FINE_TUNED
       version: v1
 
     en:
