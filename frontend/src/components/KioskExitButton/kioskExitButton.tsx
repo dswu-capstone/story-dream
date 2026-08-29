@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import "./kioskExitButton.css";
 
@@ -38,13 +38,9 @@ function readKioskFlags() {
 }
 
 function KioskExitButton() {
-  const [flags, setFlags] = useState({ isKiosk: false, port: "5174", needsConfirm: true });
+  const [flags] = useState(readKioskFlags);
   const [asking, setAsking] = useState(false);
   const [quitting, setQuitting] = useState(false);
-
-  useEffect(() => {
-    setFlags(readKioskFlags());
-  }, []);
 
   if (!flags.isKiosk) return null;
 

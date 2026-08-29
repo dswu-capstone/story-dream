@@ -15,6 +15,10 @@ import StoryResultPage from "./pages/StoryResultPage/storyResultPage";
 import StoryReadingPage from "./pages/StoryReadingPage/storyReadingPage";
 import StoryQuizPage from "./pages/StoryQuizPage/storyQuizPage";
 import RealtimeInteractionPage from "./pages/RealtimeInteractionPage/realtimeInteractionPage";
+import ReadingSummaryPage from "./pages/ReadingSummaryPage/readingSummaryPage";
+import GuardianHomePage from "./pages/GuardianHomePage/guardianHomePage";
+import ReportProfileSelectPage from "./pages/ReportProfileSelectPage/reportProfileSelectPage";
+import RequireGuardianAuth from "./components/RequireGuardianAuth/requireGuardianAuth";
 
 function App() {
   return (
@@ -31,9 +35,13 @@ function App() {
         <Route path="/stories/interaction" element={<RealtimeInteractionPage />} />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
+        <Route path="/guardian" element={<RequireGuardianAuth><GuardianHomePage /></RequireGuardianAuth>} />
+        <Route path="/guardian/reports/select" element={<RequireGuardianAuth><ReportProfileSelectPage /></RequireGuardianAuth>} />
+        <Route path="/guardian/reports/:childId" element={<RequireGuardianAuth><ReadingSummaryPage /></RequireGuardianAuth>} />
         <Route path="/guardian/children" element={<ChildManagementPage />} />
         <Route path="/guardian/children/new" element={<ChildCreatePage />} />
         <Route path="/guardian/children/:childId" element={<ChildEditPage />} />
+        <Route path="/guardian/children/:childId/reading-summary" element={<RequireGuardianAuth><ReadingSummaryPage /></RequireGuardianAuth>} />
       </Routes>
       <KioskExitButton />
     </BrowserRouter>
