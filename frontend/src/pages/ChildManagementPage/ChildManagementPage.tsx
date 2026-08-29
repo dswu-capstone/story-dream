@@ -72,15 +72,6 @@ function ChildManagementPage() {
     void loadChildren();
   }, []);
 
-  useEffect(() => {
-    if (children.length === 0) {
-      setCurrentPage(0);
-      return;
-    }
-
-    setCurrentPage((prev) => Math.min(prev, totalPages - 1));
-  }, [children, totalPages]);
-
   const handlePrev = () => {
     if (totalPages <= 1) {
       return;

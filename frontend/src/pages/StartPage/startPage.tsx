@@ -32,7 +32,7 @@ function StartPage() {
         <button
           className="menu-button guardian-button"
           onClick={() =>
-            navigateWithAuth(navigate, "/guardian/children")
+            navigateWithAuth(navigate, "/guardian")
           }
         >
           <img src={profileIcon} alt="" className="menu-icon" />
