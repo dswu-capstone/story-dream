@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        format_sql: false
+jwt:
+  secret: ${JWT_SECRET}        # 최소 32바이트 이상 (HS256)
+  expiration: 86400000         # 24시간(ms)
+
+story:
+  dataset:
+    ko:
+      generator-type: FINE_TUNED
+      version: v1
+
+    en:
+      generator-type: FINE_TUNED
+      version: v1
+ai:
+  server:
+    base-url: ${AI_SERVER_BASE_URL:http://localhost:8000} # ${변수명:기본값}
+
+aws:
+  s3:
+    bucket: project4-37-sydney-s3-231629457672-ap-southeast-2-an
