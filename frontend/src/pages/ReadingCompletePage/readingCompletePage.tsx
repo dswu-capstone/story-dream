@@ -1,12 +1,16 @@
+import { useNavigate } from "react-router-dom";
+
 import "./readingCompletePage.css";
 
-import readingCompleteDecor from "../../assets/Group 5.svg";
+import readingCompleteDecor from "../../assets/Group 6.svg";
 import Logo from "../../components/Logo/logo";
 
 const completionMessage = "책을 끝까지 읽었네!\n대단하다!";
 const finishLabel = "종료하기";
 
 function ReadingCompletePage() {
+  const navigate = useNavigate();
+
   return (
     <main className="reading-complete-page">
       <Logo />
@@ -24,6 +28,7 @@ function ReadingCompletePage() {
         <button
           type="button"
           className="reading-complete-page__button"
+          onClick={() => navigate("/stories/recommend", { replace: true })}
         >
           {finishLabel}
         </button>

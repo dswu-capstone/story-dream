@@ -3,17 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import "./childEditPage.css";
 
-const interestOptions = [
-  "공주",
-  "공룡",
-  "자동차",
-  "동물",
-  "우주",
-  "로봇",
-  "마법",
-  "모험",
-];
-
 type ChildDetailResponse = {
   success: boolean;
   data: {
@@ -37,20 +26,11 @@ function ChildEditPage() {
   const [interests, setInterests] = useState<string[]>([]);
   const [useParentVoice, setUseParentVoice] = useState(false);
 
-  const [isInterestModalOpen, setIsInterestModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const toggleInterest = (interest: string) => {
-    setInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((item) => item !== interest)
-        : [...prev, interest],
-    );
-  };
 
   useEffect(() => {
     const fetchChild = async () => {
@@ -272,27 +252,20 @@ function ChildEditPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <label
             className="child-edit-page__row child-edit-page__interest-row"
-            onClick={() => setIsInterestModalOpen(true)}
           >
             <span className="child-edit-page__label">관심 분야</span>
-
-            <span
-              className={
-                interests.length > 0
-                  ? "child-edit-page__interest-value"
-                  : "child-edit-page__interest-value child-edit-page__interest-value--empty"
+            <textarea
+              className="child-edit-page__interest-input"
+              value={interests.join(", ")}
+              placeholder="예: 공룡과 우주를 좋아하고 모험 이야기를 좋아해요"
+              onChange={(e) =>
+                setInterests(e.target.value.trim() ? [e.target.value] : [])
               }
-            >
-              {interests.length > 0
-                ? interests.join(", ")
-                : "눌러서 관심 분야 선택"}
-            </span>
-
-            <span className="child-edit-page__interest-arrow">›</span>
-          </button>
+              rows={2}
+            />
+          </label>
 
           <div className="child-edit-page__row">
             <span className="child-edit-page__label">부모 음성</span>
@@ -334,49 +307,6 @@ function ChildEditPage() {
           {isUpdating ? "수정 중..." : "수정하기"}
         </button>
       </section>
-
-      {isInterestModalOpen && (
-        <div
-          className="interest-modal"
-          onClick={() => setIsInterestModalOpen(false)}
-        >
-          <div
-            className="interest-modal__box"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2>관심 분야 선택</h2>
-
-            <p className="interest-modal__description">
-              관심 있는 분야를 여러 개 선택할 수 있어요.
-            </p>
-
-            <div className="interest-modal__list">
-              {interestOptions.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  className={
-                    interests.includes(interest)
-                      ? "interest-modal__item interest-modal__item--active"
-                      : "interest-modal__item"
-                  }
-                  onClick={() => toggleInterest(interest)}
-                >
-                  {interest}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="interest-modal__confirm"
-              onClick={() => setIsInterestModalOpen(false)}
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
 
       {isDeleteModalOpen && (
         <div

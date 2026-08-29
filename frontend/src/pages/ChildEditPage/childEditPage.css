@@ -232,9 +232,9 @@
 ========================= */
 
 .child-edit-page__interest-row {
-  height: 72px;
+  height: 88px;
 
-  cursor: pointer;
+  cursor: text;
 
   transition:
     background 0.2s ease,
@@ -695,4 +695,28 @@
   .delete-modal__box {
     padding: 40px 24px 28px;
   }
+}
+
+.child-edit-page__interest-input {
+  grid-column: 2;
+  width: 100%;
+  min-width: 0;
+  height: 56px;
+  padding: 10px 14px;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  outline: none;
+  resize: none;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  line-height: 1.4;
+}
+
+.child-edit-page__interest-input:focus {
+  border-color: #dfa4d7;
+}
+
+.child-edit-page__interest-input::placeholder {
+  color: #999;
 }

@@ -6,7 +6,10 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import interactionCharacter from "../../assets/interaction_character.svg";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
-import { loadReadingSession } from "../../utils/readingSession";
+import {
+  getReadingPageProgress,
+  loadReadingSession,
+} from "../../utils/readingSession";
 
 type LevelAdjustState = {
   originalStoryId: number;
@@ -38,6 +41,9 @@ function InteractionPage() {
     variant === "harder"
       ? levelAdjustContent.harder
       : levelAdjustContent.easier;
+  const pageProgress = readingSession
+    ? getReadingPageProgress(readingSession)
+    : { currentPage: 1, totalPages: 1 };
 
   useEffect(() => {
     if (!adjustState || !readingSession) {
@@ -65,8 +71,8 @@ function InteractionPage() {
 
       <div className="interaction-page__progress">
         <StoryProgressBar
-          currentStep={readingSession.currentPart.orderNum}
-          totalSteps={3}
+          currentStep={pageProgress.currentPage}
+          totalSteps={pageProgress.totalPages}
         />
       </div>
 
