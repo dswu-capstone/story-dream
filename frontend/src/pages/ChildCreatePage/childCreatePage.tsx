@@ -3,17 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 import "./childCreatePage.css";
 
-const interestOptions = [
-  "공주",
-  "공룡",
-  "자동차",
-  "동물",
-  "우주",
-  "로봇",
-  "마법",
-  "모험",
-];
-
 function ChildCreatePage() {
   const navigate = useNavigate();
 
@@ -22,16 +11,6 @@ function ChildCreatePage() {
   const [defaultLevel, setDefaultLevel] = useState(1);
   const [interests, setInterests] = useState<string[]>([]);
   const [useParentVoice, setUseParentVoice] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const toggleInterest = (interest: string) => {
-    setInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((item) => item !== interest)
-        : [...prev, interest],
-    );
-  };
-
   const handleSubmit = async () => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -131,31 +110,23 @@ function ChildCreatePage() {
           </div>
 
           {/* 관심 분야 */}
-          <button
-            type="button"
+          <label
             className="child-create-page__row child-create-page__interest-row"
-            onClick={() => setIsModalOpen(true)}
           >
             <span className="child-create-page__label">
               관심 분야
             </span>
 
-            <span
-              className={
-                interests.length > 0
-                  ? "child-create-page__interest-value"
-                  : "child-create-page__interest-value child-create-page__interest-value--empty"
+            <textarea
+              className="child-create-page__interest-input"
+              value={interests.join(", ")}
+              placeholder="예: 공룡과 우주를 좋아하고 모험 이야기를 좋아해요"
+              onChange={(e) =>
+                setInterests(e.target.value.trim() ? [e.target.value] : [])
               }
-            >
-              {interests.length > 0
-                ? interests.join(", ")
-                : "눌러서 관심 분야 선택"}
-            </span>
-
-            <span className="child-create-page__interest-arrow">
-              ›
-            </span>
-          </button>
+              rows={2}
+            />
+          </label>
 
           {/* 부모 음성 */}
           <div className="child-create-page__row">
@@ -201,49 +172,6 @@ function ChildCreatePage() {
         </button>
       </section>
 
-      {/* 관심 분야 선택 모달 */}
-      {isModalOpen && (
-        <div
-          className="interest-modal"
-          onClick={() => setIsModalOpen(false)}
-        >
-          <div
-            className="interest-modal__box"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2>관심 분야 선택</h2>
-
-            <p className="interest-modal__description">
-              관심 있는 분야를 여러 개 선택할 수 있어요.
-            </p>
-
-            <div className="interest-modal__list">
-              {interestOptions.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  className={
-                    interests.includes(interest)
-                      ? "interest-modal__item interest-modal__item--active"
-                      : "interest-modal__item"
-                  }
-                  onClick={() => toggleInterest(interest)}
-                >
-                  {interest}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="interest-modal__confirm"
-              onClick={() => setIsModalOpen(false)}
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

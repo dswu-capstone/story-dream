@@ -160,8 +160,8 @@
 
 /* 관심 분야 행 */
 .child-create-page__interest-row {
-  height: 72px;
-  cursor: pointer;
+  height: 88px;
+  cursor: text;
 
   transition:
     background 0.2s ease,
@@ -396,4 +396,28 @@
     grid-template-columns: 150px minmax(0, 1fr) 150px;
     padding: 0 28px;
   }
+}
+
+.child-create-page__interest-input {
+  grid-column: 2;
+  width: 100%;
+  min-width: 0;
+  height: 56px;
+  padding: 10px 14px;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  outline: none;
+  resize: none;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  line-height: 1.4;
+}
+
+.child-create-page__interest-input:focus {
+  border-color: #dfa4d7;
+}
+
+.child-create-page__interest-input::placeholder {
+  color: #999;
 }

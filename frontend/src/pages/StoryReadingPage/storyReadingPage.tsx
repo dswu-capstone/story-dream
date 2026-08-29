@@ -11,12 +11,16 @@ import {
 } from "../../api/focusInteraction";
 import { getNextReadingPart, startReading } from "../../api/reading";
 import { getRealtimeSession } from "../../api/realtimeInteraction";
+import { getStoryDetail } from "../../api/story";
 import readingPlaceholder from "../../assets/reading_book.svg";
 import audioIcon from "../../assets/mingcute_voice-line.svg";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
 import type { ReadingSession } from "../../types/story";
 import {
+  createNextReadingPageProgress,
+  createReadingPageProgress,
+  getReadingPageProgress,
   loadReadingSession,
   saveReadingSession,
 } from "../../utils/readingSession";
@@ -28,8 +32,6 @@ type StoryReadingLocationState = {
   storyTitle?: string;
   selectedLevel?: number;
 };
-
-const TOTAL_PARTS = 3;
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error
@@ -57,7 +59,7 @@ function StoryReadingPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [readingSession, setReadingSession] = useState<ReadingSession | null>(
-    null,
+    () => (shouldAdvancePart ? loadReadingSession() : null),
   );
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -92,6 +94,10 @@ function StoryReadingPage() {
             storedSession.readingHistoryId,
             requestedLevel ?? storedSession.selectedLevel,
           );
+          const storyDetail = await getStoryDetail(
+            originalStoryId,
+            nextPart.level,
+          );
           const nextSession: ReadingSession = {
             ...storedSession,
             selectedLevel: nextPart.level,
@@ -101,6 +107,11 @@ function StoryReadingPage() {
               pages: nextPart.pages,
             },
             currentPageIndex: 0,
+            pageProgress: createNextReadingPageProgress(
+              storedSession,
+              storyDetail.parts,
+              nextPart.partOrderNum,
+            ),
           };
 
           saveReadingSession(nextSession);
@@ -116,7 +127,25 @@ function StoryReadingPage() {
           !shouldStartNewSession &&
           storedSession?.originalStoryId === originalStoryId
         ) {
-          setReadingSession(storedSession);
+          if (storedSession.pageProgress) {
+            setReadingSession(storedSession);
+            return;
+          }
+
+          const storyDetail = await getStoryDetail(
+            originalStoryId,
+            storedSession.selectedLevel,
+          );
+          const restoredSession: ReadingSession = {
+            ...storedSession,
+            pageProgress: createReadingPageProgress(
+              storyDetail.parts,
+              storedSession.currentPart.orderNum,
+              storedSession.currentPageIndex,
+            ),
+          };
+          saveReadingSession(restoredSession);
+          setReadingSession(restoredSession);
           return;
         }
 
@@ -125,6 +154,10 @@ function StoryReadingPage() {
         }
 
         const readingStart = await startReading(childId, originalStoryId);
+        const storyDetail = await getStoryDetail(
+          originalStoryId,
+          readingStart.level,
+        );
         const newSession: ReadingSession = {
           readingHistoryId: readingStart.readingHistoryId,
           originalStoryId,
@@ -136,6 +169,11 @@ function StoryReadingPage() {
             pages: readingStart.pages,
           },
           currentPageIndex: 0,
+          pageProgress: createReadingPageProgress(
+            storyDetail.parts,
+            readingStart.partOrderNum,
+            0,
+          ),
         };
 
         saveReadingSession(newSession);
@@ -168,6 +206,9 @@ function StoryReadingPage() {
   const pages = currentPart?.pages ?? [];
   const currentPageIndex = readingSession?.currentPageIndex ?? 0;
   const currentPage = pages[currentPageIndex];
+  const pageProgress = readingSession
+    ? getReadingPageProgress(readingSession)
+    : { currentPage: 1, totalPages: 1 };
 
   const stopAudio = useCallback(() => {
     const audio = audioRef.current;
@@ -253,6 +294,13 @@ function StoryReadingPage() {
       const nextSession = {
         ...currentSession,
         currentPageIndex: pageIndex,
+        pageProgress: {
+          ...getReadingPageProgress(currentSession),
+          currentPage:
+            getReadingPageProgress(currentSession).currentPage +
+            pageIndex -
+            currentSession.currentPageIndex,
+        },
       };
 
       saveReadingSession(nextSession);
@@ -321,10 +369,12 @@ function StoryReadingPage() {
       <Logo />
 
       <div className="story-reading-page__progress">
-        <StoryProgressBar
-          currentStep={currentPart?.orderNum ?? 1}
-          totalSteps={TOTAL_PARTS}
-        />
+        {readingSession && (
+          <StoryProgressBar
+            currentStep={pageProgress.currentPage}
+            totalSteps={pageProgress.totalPages}
+          />
+        )}
       </div>
 
       <button
@@ -378,7 +428,7 @@ function StoryReadingPage() {
                   {readingSession.storyTitle}
                 </h1>
                 <span className="story-reading-page__page-number">
-                  {currentPageIndex + 1} / {pages.length}
+                  {pageProgress.currentPage} / {pageProgress.totalPages}
                 </span>
               </div>
 

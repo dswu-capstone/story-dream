@@ -6,7 +6,11 @@ import "./storyResultPage.css";
 import { endReading } from "../../api/reading";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
-import { clearReadingSession } from "../../utils/readingSession";
+import {
+  clearReadingSession,
+  getReadingPageProgress,
+  loadReadingSession,
+} from "../../utils/readingSession";
 
 type StoryResultState = {
   readingHistoryId: number;
@@ -35,6 +39,7 @@ function StoryResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const resultState = location.state as StoryResultState | null;
+  const readingSession = loadReadingSession();
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -72,6 +77,9 @@ function StoryResultPage() {
   const description = isCorrect
     ? explanation || answerMessage
     : [explanation, answerMessage].filter(Boolean).join(" ");
+  const pageProgress = readingSession
+    ? getReadingPageProgress(readingSession)
+    : { currentPage: 1, totalPages: 1 };
 
   const moveToNextPart = (nextLevel: number) => {
     navigate(`/stories/read?originalStoryId=${originalStoryId}`, {
@@ -150,8 +158,8 @@ function StoryResultPage() {
 
       <div className="story-result-page__progress">
         <StoryProgressBar
-          currentStep={quizIndex + 1}
-          totalSteps={Math.max(totalQuizzes, 1)}
+          currentStep={pageProgress.currentPage}
+          totalSteps={pageProgress.totalPages}
         />
       </div>
 

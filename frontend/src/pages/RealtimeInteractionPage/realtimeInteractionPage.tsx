@@ -27,7 +27,10 @@ import DreamyCharacter from "../../components/DreamyCharacter/dreamyCharacter";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
 import type { ReadingSession, StoryDetail, StoryPage } from "../../types/story";
-import { loadReadingSession } from "../../utils/readingSession";
+import {
+  getReadingPageProgress,
+  loadReadingSession,
+} from "../../utils/readingSession";
 
 type InteractionPhase =
   | "idle"
@@ -796,13 +799,19 @@ function RealtimeInteractionPage() {
   };
 
   const showStartButton = phase === "idle" || phase === "complete";
+  const pageProgress = storedReadingSession
+    ? getReadingPageProgress(storedReadingSession)
+    : null;
   const currentStep = Math.max(
-    storySnapshot?.partOrderNum ??
+    pageProgress?.currentPage ??
+      storySnapshot?.partOrderNum ??
       Number(searchParams.get("partIndex") ?? 0) + 1,
     1,
   );
   const totalSteps = Math.max(
-    storySnapshot?.totalParts ?? Number(searchParams.get("totalParts") ?? 3),
+    pageProgress?.totalPages ??
+      storySnapshot?.totalParts ??
+      Number(searchParams.get("totalParts") ?? 3),
     1,
   );
   const bubbleLayout = getBubbleLayout(bubbleText);

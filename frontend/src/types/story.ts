@@ -52,4 +52,8 @@ export type ReadingSession = {
   selectedLevel: number;
   currentPart: StoryPart;
   currentPageIndex: number;
+  pageProgress?: {
+    currentPage: number;
+    totalPages: number;
+  };
 };
