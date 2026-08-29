@@ -76,7 +76,7 @@ if [ -z "${FISH_AUDIO_API_KEY:-}" ]; then
   echo "[warn] FISH_AUDIO_API_KEY 가 없어 나레이션 생성은 비활성화됩니다." >&2
 fi
 
-node server.js &
+node server.js & # Node 서버 실행
 SERVER_PID=$!
 trap 'kill $SERVER_PID 2>/dev/null' EXIT
 

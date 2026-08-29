@@ -98,7 +98,7 @@ public class QuizServiceImpl implements QuizService {
                 isCorrect,
                 quiz.getAnswer(),
                 isLastQuizOfPart,
-                null // 난이도 변경 로직은 추후에 추가
+                2 // 난이도 변경 로직은 추후에 추가
         );
     }
 
