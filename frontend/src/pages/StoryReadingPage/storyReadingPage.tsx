@@ -210,6 +210,20 @@ function StoryReadingPage() {
     ? getReadingPageProgress(readingSession)
     : { currentPage: 1, totalPages: 1 };
 
+  // 다음 페이지 이미지를 미리 받아두어 페이지 전환 시 바로 표시되도록 합니다.
+  useEffect(() => {
+    pages
+      .slice(currentPageIndex + 1, currentPageIndex + 3)
+      .forEach((page) => {
+        if (!page.imageUrl) {
+          return;
+        }
+
+        const image = new Image();
+        image.src = page.imageUrl;
+      });
+  }, [currentPageIndex, pages]);
+
   const stopAudio = useCallback(() => {
     const audio = audioRef.current;
 
