@@ -76,18 +76,10 @@ const storyIllustrations = [
   backgroundHills,
 ] as const;
 
+// 추천 동화 목록의 대표 이미지는 모든 카드에서 동일한 캐릭터 이미지 사용
 const storyPlaceholders = [
   {
     thumbnailSrc: characterCover,
-  },
-  {
-    thumbnailSrc: readingBookCover,
-  },
-  {
-    thumbnailSrc: backgroundHills,
-  },
-  {
-    thumbnailSrc: readingBookCover,
   },
 ] as const;
 
