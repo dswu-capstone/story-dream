@@ -1,4 +1,5 @@
 import type {
+  ReportDetailResponse,
   ReportOverviewResponse,
   ReportPage,
 } from "../types/readingReport";
@@ -87,4 +88,14 @@ export async function getReadingReportData(childId: number, range: DateRange) {
   ]);
 
   return { overview, history };
+}
+
+export async function getReadingReportDetail(reportId: number) {
+  const token = getAccessToken();
+  const guardianId = await getGuardianId(token);
+  return requestReport<ReportDetailResponse>(
+    `/api/reading-reports/${reportId}`,
+    token,
+    guardianId,
+  );
 }

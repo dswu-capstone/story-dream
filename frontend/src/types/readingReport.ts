@@ -37,3 +37,35 @@ export type ReportPage = {
   number: number;
   size: number;
 };
+
+export type PartTrend = {
+  partType: string;
+  orderNum: number;
+  level: number;
+  accuracy: number;
+  quizTotal: number;
+  quizCorrect: number;
+  distractionCount: number;
+  distractionSec: number;
+};
+
+export type ReportDetailResponse = {
+  reportId: number;
+  readingHistoryId: number;
+  storyTitle: string;
+  coverImageUrl: string | null;
+  childName: string;
+  status: string;
+  completedDate: string | null;
+  totalReadingSec: number;
+  averageQuizScore: number;
+  totalQuizCount: number;
+  correctQuizCount: number;
+  startLevel: number | null;
+  endLevel: number | null;
+  distractionCount: number;
+  distractionSec: number;
+  focusRate: number | null;
+  aiSummary: string | null;
+  parts: PartTrend[];
+};
