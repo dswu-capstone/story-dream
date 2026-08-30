@@ -10,7 +10,6 @@ function ChildCreatePage() {
   const [birthDate, setBirthDate] = useState("");
   const [defaultLevel, setDefaultLevel] = useState(1);
   const [interests, setInterests] = useState<string[]>([]);
-  const [useParentVoice, setUseParentVoice] = useState(false);
   const handleSubmit = async () => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -25,7 +24,6 @@ function ChildCreatePage() {
         birthDate,
         defaultLevel,
         interest: interests,
-        useParentVoice,
       }),
     });
 
@@ -128,38 +126,6 @@ function ChildCreatePage() {
             />
           </label>
 
-          {/* 부모 음성 */}
-          <div className="child-create-page__row">
-            <span className="child-create-page__label">
-              부모 음성
-            </span>
-
-            <div className="child-create-page__voice-options">
-              <button
-                type="button"
-                className={
-                  useParentVoice
-                    ? "child-create-page__voice-option child-create-page__voice-option--active"
-                    : "child-create-page__voice-option"
-                }
-                onClick={() => setUseParentVoice(true)}
-              >
-                사용
-              </button>
-
-              <button
-                type="button"
-                className={
-                  !useParentVoice
-                    ? "child-create-page__voice-option child-create-page__voice-option--active"
-                    : "child-create-page__voice-option"
-                }
-                onClick={() => setUseParentVoice(false)}
-              >
-                미사용
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* 등록 버튼 */}

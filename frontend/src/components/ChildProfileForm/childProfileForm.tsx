@@ -8,7 +8,6 @@ type ChildProfileFormValues = {
   birthDate: string;
   defaultLevel: number;
   interest: string[];
-  useParentVoice: boolean;
 };
 
 type ChildProfileFormProps = {
@@ -46,7 +45,7 @@ function ChildProfileForm({
 
   const handleChange = (
     field: keyof ChildProfileFormValues,
-    value: string | number | boolean | string[],
+    value: string | number | string[],
   ) => {
     setValues((prev) => ({
       ...prev,
@@ -140,12 +139,6 @@ function ChildProfileForm({
             <strong>{values.interest.join(", ")}</strong>
           </button>
 
-          <div className="child-profile-page__row">
-            <span>부모 음성</span>
-            <strong className="child-profile-page__voice-status">
-              {values.useParentVoice ? "사용중" : "미사용"}
-            </strong>
-          </div>
         </div>
 
         <button
