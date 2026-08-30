@@ -204,34 +204,6 @@
   line-height: 1;
 }
 
-.child-create-page__voice-options {
-  grid-column: 2;
-  justify-self: center;
-
-  display: flex;
-  gap: 12px;
-}
-
-.child-create-page__voice-option {
-  width: 84px;
-  height: 34px;
-
-  border: none;
-  border-radius: 999px;
-
-  background: #f2f2f2;
-
-  color: #555;
-  font-size: 16px;
-
-  cursor: pointer;
-}
-
-.child-create-page__voice-option--active {
-  background: #dfa4d7;
-  color: #111;
-}
-
 /* 등록 버튼 */
 .child-create-page__submit-button {
   display: block;
@@ -239,7 +211,7 @@
   width: 160px;
   height: 40px;
 
-  margin: 26px auto 0;
+  margin: 24px auto 0;
 
   border: none;
   border-radius: 10px;
