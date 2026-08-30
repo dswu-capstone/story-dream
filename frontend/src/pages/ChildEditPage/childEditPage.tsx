@@ -11,7 +11,6 @@ type ChildDetailResponse = {
     birthDate: string;
     defaultLevel: number;
     interest: string[];
-    useParentVoice: boolean;
   };
   message: string | null;
 };
@@ -24,7 +23,6 @@ function ChildEditPage() {
   const [birthDate, setBirthDate] = useState("");
   const [defaultLevel, setDefaultLevel] = useState(1);
   const [interests, setInterests] = useState<string[]>([]);
-  const [useParentVoice, setUseParentVoice] = useState(false);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -68,7 +66,6 @@ function ChildEditPage() {
         setBirthDate(result.data.birthDate);
         setDefaultLevel(result.data.defaultLevel);
         setInterests(result.data.interest ?? []);
-        setUseParentVoice(result.data.useParentVoice);
       } catch (error) {
         console.error("아동 상세 조회 오류:", error);
         alert("아동 정보를 불러오는 중 오류가 발생했습니다.");
@@ -118,7 +115,6 @@ function ChildEditPage() {
           birthDate,
           defaultLevel,
           interest: interests,
-          useParentVoice,
         }),
       });
 
@@ -267,35 +263,6 @@ function ChildEditPage() {
             />
           </label>
 
-          <div className="child-edit-page__row">
-            <span className="child-edit-page__label">부모 음성</span>
-
-            <div className="child-edit-page__voice-options">
-              <button
-                type="button"
-                className={
-                  useParentVoice
-                    ? "child-edit-page__voice-option child-edit-page__voice-option--active"
-                    : "child-edit-page__voice-option"
-                }
-                onClick={() => setUseParentVoice(true)}
-              >
-                사용
-              </button>
-
-              <button
-                type="button"
-                className={
-                  !useParentVoice
-                    ? "child-edit-page__voice-option child-edit-page__voice-option--active"
-                    : "child-edit-page__voice-option"
-                }
-                onClick={() => setUseParentVoice(false)}
-              >
-                미사용
-              </button>
-            </div>
-          </div>
         </div>
 
         <button
