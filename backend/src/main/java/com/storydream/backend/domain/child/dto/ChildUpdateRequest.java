@@ -15,9 +15,9 @@ public record ChildUpdateRequest(
         @Max(3)
         Integer defaultLevel,
 
-        String[] interest,
+        String[] interest
 
-        Boolean useParentVoice
+        // Boolean useParentVoice
 
 ) {
 }

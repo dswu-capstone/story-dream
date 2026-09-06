@@ -7,7 +7,7 @@ public record ChildProfileResponse(
         String name,
         LocalDate birthDate,
         Integer defaultLevel,
-        String[] interest,
-        Boolean useParentVoice
+        String[] interest
+        // Boolean useParentVoice
 ) {
 }

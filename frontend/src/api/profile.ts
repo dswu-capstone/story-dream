@@ -19,7 +19,6 @@ type ChildProfileResponse = {
     birthDate: string;
     defaultLevel: number;
     interest: string[];
-    useParentVoice: boolean;
   };
   message: string | null;
 };
