@@ -18,6 +18,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.storydream.backend.domain.focus.service.FocusLogService;
+import com.storydream.backend.domain.reading.entity.ReadingStatus;
+import com.storydream.backend.domain.report.event.ReadingCompletedEvent;
+import org.springframework.context.ApplicationEventPublisher;
+
 import java.util.List;
 
 @Service
@@ -35,6 +40,9 @@ public class ReadingServiceImpl implements ReadingService {
     private final StorySentenceRepository storySentenceRepository;
 
     private final FileUrlProvider fileUrlProvider;
+
+    private final FocusLogService focusLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${story.dataset.ko.generator-type}")
     private String koGeneratorType;
@@ -159,21 +167,44 @@ public class ReadingServiceImpl implements ReadingService {
         );
     }
 
-    @Override
-    @Transactional
-    public void endReading(
-            Integer guardianId,
-            Integer readingHistoryId
-    ) {
-        ReadingHistory readingHistory = readingHistoryRepository.findById(readingHistoryId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND));
+//    @Override
+//    @Transactional
+//    public void endReading(
+//            Integer guardianId,
+//            Integer readingHistoryId
+//    ) {
+//        ReadingHistory readingHistory = readingHistoryRepository.findById(readingHistoryId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND));
+//
+//        if (!readingHistory.getChild().getGuardian().getId().equals(guardianId)) {
+//            throw new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND);
+//        }
+//
+//        readingHistory.end();
+//    }
+        @Override
+        @Transactional
+        public void endReading(
+                Integer guardianId,
+                Integer readingHistoryId
+        ) {
+            ReadingHistory readingHistory = readingHistoryRepository.findById(readingHistoryId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND));
 
-        if (!readingHistory.getChild().getGuardian().getId().equals(guardianId)) {
-            throw new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND);
+            if (!readingHistory.getChild().getGuardian().getId().equals(guardianId)) {
+                throw new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND);
+            }
+
+            if (readingHistory.getStatus() == ReadingStatus.COMPLETED) {
+                return;
+            }
+
+            readingHistory.end();
+
+            focusLogService.closeAllOpen(readingHistoryId, readingHistory.getEndedAt());
+
+            eventPublisher.publishEvent(new ReadingCompletedEvent(readingHistoryId));
         }
-
-        readingHistory.end();
-    }
 
     @Override
     @Transactional

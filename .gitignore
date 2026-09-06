@@ -7,3 +7,14 @@ __pycache__/
 *.py[cod]
 
 venv/
+*.pem
+*.key
+storydream.pem
+
+
+*.log
+mon*.log
+
+monitor.sh
+smoke.sh
+AGENTS.md

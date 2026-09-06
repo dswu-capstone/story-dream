@@ -30,36 +30,70 @@ public class AiReadingReportGenerator {
     private final AiReadingReportRepository reportRepository;
     private final ReportMetricsCalculator calculator;
 
-    @Transactional
-    public Integer createDraft(Integer readingHistoryId) {
-        ReadingHistory history = readingHistoryRepository.findById(readingHistoryId)
-                .orElseThrow(() -> new IllegalArgumentException("독서 이력이 없습니다. id=" + readingHistoryId));
+//    @Transactional
+//    public Integer createDraft(Integer readingHistoryId) {
+//        ReadingHistory history = readingHistoryRepository.findById(readingHistoryId)
+//                .orElseThrow(() -> new IllegalArgumentException("독서 이력이 없습니다. id=" + readingHistoryId));
+//
+//        if (history.getStatus() != ReadingStatus.COMPLETED) {
+//            throw new IllegalStateException("완료된 독서만 리포트를 생성할 수 있습니다.");
+//        }
+//        if (history.getEndedAt() == null) {
+//            throw new IllegalStateException("종료 시각이 없는 독서는 리포트를 생성할 수 없습니다.");
+//        }
+//
+//        ReportMetrics metrics = calculator.calculate(
+//                history.getStartedAt(),
+//                history.getEndedAt(),
+//                readingLogRepository.findAllByReadingHistoryIdOrderByCreatedAtAsc(readingHistoryId),
+//                quizResultRepository.findPartStatsByReadingHistoryId(readingHistoryId),
+//                focusLogRepository.findPartStatsByReadingHistoryId(readingHistoryId)
+//        );
+//
+//
+//        AiReadingReport report = reportRepository.findByReadingHistoryId(readingHistoryId)
+//                .orElseGet(() -> AiReadingReport.of(history, history.getChild(), metrics));
+//
+//        report.applyMetrics(metrics);
+//        report.replaceParts(metrics.parts());
+//        report.markProcessing();
+//
+//        return reportRepository.save(report).getId();
+//    }
+        @Transactional
+        public Integer createDraft(Integer readingHistoryId) {
+            ReadingHistory history = readingHistoryRepository.findById(readingHistoryId)
+                    .orElseThrow(() -> new IllegalArgumentException("독서 이력이 없습니다. id=" + readingHistoryId));
 
-        if (history.getStatus() != ReadingStatus.COMPLETED) {
-            throw new IllegalStateException("완료된 독서만 리포트를 생성할 수 있습니다.");
+            if (history.getStatus() != ReadingStatus.COMPLETED) {
+                throw new IllegalStateException("완료된 독서만 리포트를 생성할 수 있습니다.");
+            }
+            if (history.getEndedAt() == null) {
+                throw new IllegalStateException("종료 시각이 없는 독서는 리포트를 생성할 수 없습니다.");
+            }
+
+            ReportMetrics metrics = calculator.calculate(
+                    history.getStartedAt(),
+                    history.getEndedAt(),
+                    readingLogRepository.findAllByReadingHistoryIdOrderByCreatedAtAsc(readingHistoryId),
+                    quizResultRepository.findPartStatsByReadingHistoryId(readingHistoryId),
+                    focusLogRepository.findPartStatsByReadingHistoryId(readingHistoryId)
+            );
+
+            AiReadingReport report = reportRepository.findByReadingHistoryId(readingHistoryId)
+                    .orElseGet(() -> reportRepository.save(
+                            AiReadingReport.of(history, history.getChild(), metrics)));
+
+            report.applyMetrics(metrics);
+
+            report.getParts().clear();
+            reportRepository.flush();
+
+            report.replaceParts(metrics.parts());
+            report.markProcessing();
+
+            return reportRepository.save(report).getId();
         }
-        if (history.getEndedAt() == null) {
-            throw new IllegalStateException("종료 시각이 없는 독서는 리포트를 생성할 수 없습니다.");
-        }
-
-        ReportMetrics metrics = calculator.calculate(
-                history.getStartedAt(),
-                history.getEndedAt(),
-                readingLogRepository.findAllByReadingHistoryIdOrderByCreatedAtAsc(readingHistoryId),
-                quizResultRepository.findPartStatsByReadingHistoryId(readingHistoryId),
-                focusLogRepository.findPartStatsByReadingHistoryId(readingHistoryId)
-        );
-
-
-        AiReadingReport report = reportRepository.findByReadingHistoryId(readingHistoryId)
-                .orElseGet(() -> AiReadingReport.of(history, history.getChild(), metrics));
-
-        report.applyMetrics(metrics);
-        report.replaceParts(metrics.parts());
-        report.markProcessing();
-
-        return reportRepository.save(report).getId();
-    }
 
 
     @Transactional(readOnly = true)
