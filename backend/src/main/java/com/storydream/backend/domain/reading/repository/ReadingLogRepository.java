@@ -8,5 +8,9 @@ import java.util.Optional;
 
 public interface ReadingLogRepository extends JpaRepository<ReadingLog, Integer> {
     Optional<ReadingLog> findTopByReadingHistoryIdOrderByIdDesc(Integer readingHistoryId);
+    Optional<ReadingLog> findTopByReadingHistoryIdAndPartTypeOrderByIdDesc(
+            Integer readingHistoryId,
+            String partType
+    );
     List<ReadingLog> findAllByReadingHistoryIdOrderByCreatedAtAsc(Integer readingHistoryId);
 }
