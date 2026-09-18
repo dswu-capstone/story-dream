@@ -27,6 +27,8 @@ public enum ErrorCode {
     INVALID_NEXT_PART(HttpStatus.BAD_REQUEST, "결론 이후에는 다음 파트가 없습니다."),
     PART_QUIZZES_INCOMPLETE(HttpStatus.CONFLICT, "현재 파트의 퀴즈를 모두 제출해야 합니다."),
     DUPLICATE_NEXT_PART(HttpStatus.CONFLICT, "다음 파트의 독서 로그가 이미 존재합니다."),
+    INVALID_FOCUS_EVENT(HttpStatus.BAD_REQUEST, "이탈 이벤트 ID, 시각, 종류와 10초 이상의 지속 시간을 확인해 주세요."),
+    FOCUS_EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "복귀 처리할 이탈 이벤트를 찾을 수 없습니다."),
     INVALID_LANGUAGE(HttpStatus.BAD_REQUEST, "지원하지 않는 언어입니다."),
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
     QUIZ_PART_MISMATCH(HttpStatus.CONFLICT, "현재 읽고 있는 파트의 퀴즈가 아닙니다."),
