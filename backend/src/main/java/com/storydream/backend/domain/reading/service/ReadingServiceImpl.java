@@ -2,6 +2,9 @@ package com.storydream.backend.domain.reading.service;
 
 import com.storydream.backend.domain.child.entity.Child;
 import com.storydream.backend.domain.child.repository.ChildRepository;
+import com.storydream.backend.domain.quiz.entity.Quiz;
+import com.storydream.backend.domain.quiz.repository.QuizRepository;
+import com.storydream.backend.domain.quiz.repository.QuizResultRepository;
 import com.storydream.backend.domain.reading.dto.*;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
 import com.storydream.backend.domain.reading.entity.ReadingLog;
@@ -33,6 +36,10 @@ public class ReadingServiceImpl implements ReadingService {
     private final StoryPageRepository  storyPageRepository;
     private final StoryPartRepository storyPartRepository;
     private final StorySentenceRepository storySentenceRepository;
+
+    private final QuizRepository quizRepository;
+    private final QuizResultRepository quizResultRepository;
+    private final DifficultyDecisionService difficultyDecisionService;
 
     private final FileUrlProvider fileUrlProvider;
 
@@ -182,9 +189,9 @@ public class ReadingServiceImpl implements ReadingService {
             Integer readingHistoryId,
             NextPartRequest request
     ) {
-        // 로그인한 보호자의 독서 기록인지 확인
+        // 퀴즈 제출과 동일한 독서 기록 행을 잠가 동시 전환을 직렬화한다.
         ReadingHistory readingHistory = readingHistoryRepository
-                .findByIdAndChildGuardianId(
+                .findOwnedByIdForUpdate(
                         readingHistoryId,
                         guardianId
                 )
@@ -205,8 +212,28 @@ public class ReadingServiceImpl implements ReadingService {
                         )
                 );
 
-        // 현재 파트를 기준으로 다음 파트 결정
         String currentPartType = currentLog.getPartType();
+        Integer currentLevel = currentLog.getLevel();
+
+        // 결론은 퀴즈 제출 여부와 무관하게 기존 종료 API를 사용한다.
+        if (!"서론".equals(currentPartType) && !"본론".equals(currentPartType)) {
+            throw new BusinessException(ErrorCode.INVALID_NEXT_PART);
+        }
+
+        OriginalStory originalStory = readingHistory.getOriginalStory();
+        validatePartQuizzesCompleted(readingHistoryId, originalStory.getId(), currentPartType);
+
+        DifficultyDecisionResult decision = difficultyDecisionService.decide(
+                readingHistoryId, currentPartType
+        );
+        Integer recommendedLevel = decision.nextLevel();
+        Integer selectedLevel = request.selectedLevel();
+        if (selectedLevel == null || selectedLevel < 1 || selectedLevel > 3
+                || (!selectedLevel.equals(currentLevel) && !selectedLevel.equals(recommendedLevel))) {
+            throw new BusinessException(ErrorCode.INVALID_STORY_LEVEL);
+        }
+
+        // 검증된 선택을 유지하여 다음 파트로 진행한다.
         String nextPartType;
 
         if ("서론".equals(currentPartType)) {
@@ -219,12 +246,9 @@ public class ReadingServiceImpl implements ReadingService {
             );
         }
 
-        // 프론트에서 선택한 난이도
-        Integer selectedLevel = request.selectedLevel();
-
-        // 원본 동화 조회
-        OriginalStory originalStory =
-                readingHistory.getOriginalStory();
+        if (readingLogRepository.existsByReadingHistoryIdAndPartType(readingHistoryId, nextPartType)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_NEXT_PART);
+        }
 
         // 동화 언어에 따라 generatorType / version 결정
         String generatorType;
@@ -315,6 +339,26 @@ public class ReadingServiceImpl implements ReadingService {
         );
     }
 
+
+    private void validatePartQuizzesCompleted(
+            Integer readingHistoryId, Integer originalStoryId, String partType
+    ) {
+        List<Integer> quizIds = quizRepository
+                .findByOriginalStoryIdAndPartTypeOrderByOrderNumAsc(originalStoryId, partType)
+                .stream()
+                .map(Quiz::getId)
+                .toList();
+
+        // 퀴즈가 없는 파트를 완료로 간주하지 않는다.
+        if (quizIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.PART_QUIZZES_INCOMPLETE);
+        }
+        List<Integer> submittedQuizIds = quizResultRepository.findSubmittedQuizIds(readingHistoryId, quizIds);
+        // 과거의 중복 결과나 다른 동화/파트의 결과로 누락된 문제를 채울 수 없다.
+        if (!submittedQuizIds.containsAll(quizIds)) {
+            throw new BusinessException(ErrorCode.PART_QUIZZES_INCOMPLETE);
+        }
+    }
 
     private List<PageResponse> createPageResponses(
             List<StoryPage> pages,

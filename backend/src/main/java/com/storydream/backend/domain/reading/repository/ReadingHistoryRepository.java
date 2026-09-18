@@ -13,6 +13,13 @@ public interface ReadingHistoryRepository extends JpaRepository<ReadingHistory, 
     Optional<ReadingHistory> findByIdAndChildGuardianId(Integer readingHistoryId, Integer guardianId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT rh FROM ReadingHistory rh WHERE rh.id = :historyId AND rh.child.guardian.id = :guardianId")
+    Optional<ReadingHistory> findOwnedByIdForUpdate(
+            @Param("historyId") Integer historyId,
+            @Param("guardianId") Integer guardianId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT rh FROM ReadingHistory rh WHERE rh.id = :readingHistoryId")
     Optional<ReadingHistory> findByIdForUpdate(
             @Param("readingHistoryId") Integer readingHistoryId

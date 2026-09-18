@@ -11,6 +11,17 @@ import java.util.Optional;
 
 public interface QuizResultRepository extends JpaRepository<QuizResult, Integer> {
 
+    @Query("""
+        SELECT DISTINCT qr.quiz.id
+          FROM QuizResult qr
+         WHERE qr.readingHistory.id = :historyId
+           AND qr.quiz.id IN :quizIds
+        """)
+    List<Integer> findSubmittedQuizIds(
+            @Param("historyId") Integer historyId,
+            @Param("quizIds") List<Integer> quizIds
+    );
+
     Optional<QuizResult> findByReadingHistoryIdAndQuizId(
             Integer readingHistoryId,
             Integer quizId
