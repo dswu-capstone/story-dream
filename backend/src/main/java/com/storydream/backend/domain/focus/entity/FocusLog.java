@@ -10,7 +10,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "focus_log")
+@Table(name = "focus_log", uniqueConstraints = @UniqueConstraint(
+        name = "uk_focus_log_history_event", columnNames = {"reading_history_id", "event_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FocusLog {
@@ -22,6 +23,10 @@ public class FocusLog {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reading_history_id", nullable = false)
     private ReadingHistory readingHistory;
+
+    // 과거 로그는 null을 유지한다. 새 API에서는 확정된 이탈 구간 ID를 필수로 저장한다.
+    @Column(name = "event_id", length = 128)
+    private String eventId;
 
     @Convert(converter = PartTypeConverter.class)
     @Column(name = "part_type", nullable = false, length = 20)
@@ -56,7 +61,7 @@ public class FocusLog {
     @Builder
     private FocusLog(ReadingHistory readingHistory, PartType partType, Integer level,
                      FocusEventType eventType, FocusStatus state, String detail,
-                     LocalDateTime startedAt) {
+                     LocalDateTime startedAt, String eventId, Integer durationSec) {
         this.readingHistory = readingHistory;
         this.partType = partType;
         this.level = level;
@@ -64,11 +69,15 @@ public class FocusLog {
         this.state = state;
         this.detail = detail != null && detail.length() > 255 ? detail.substring(0, 255) : detail;
         this.startedAt = startedAt;
+        this.eventId = eventId;
+        this.durationSec = durationSec;
     }
 
     public void close(LocalDateTime recoveredAt) {
         if (this.endedAt != null) return;
         if (recoveredAt.isBefore(this.startedAt)) return;
+        // 이미 확인된 이탈 시간보다 짧게 닫아 확정 이벤트를 훼손하지 않는다.
+        if (durationSec != null && recoveredAt.isBefore(startedAt.plusSeconds(durationSec))) return;
         this.endedAt = recoveredAt;
         this.durationSec = (int) Duration.between(this.startedAt, recoveredAt).toSeconds();
     }

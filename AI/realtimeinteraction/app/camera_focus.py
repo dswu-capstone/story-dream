@@ -31,7 +31,11 @@ import base64
 import os
 import time
 import urllib.request
+import sys
+import threading
+import queue
 from collections import Counter, deque
+from focus_episode import FocusEpisode
 
 import cv2
 from ultralytics import YOLO
@@ -169,6 +173,18 @@ def ensure_onnx_model(path):
 
 
 def main():
+    # Recording is additive. Existing /api/focus interaction timers below are unchanged.
+    commands = queue.Queue()
+    recorder = None
+
+    def read_commands():
+        for line in sys.stdin:
+            try:
+                commands.put(json.loads(line))
+            except ValueError:
+                pass
+
+    threading.Thread(target=read_commands, daemon=True).start()
     print(f"[camera-focus] loading ONNX pose model: {MODEL_PATH}")
     model_path = ensure_onnx_model(MODEL_PATH)
     model = YOLO(model_path, task="pose")
@@ -198,6 +214,25 @@ def main():
     print("[camera-focus] running")
 
     while True:
+        while not commands.empty():
+            command = commands.get_nowait()
+            ack = {"requestId": command.get("requestId")}
+            try:
+                if command.get("action") == "stop":
+                    if recorder:
+                        recorder.finish()
+                    recorder = None
+                elif command.get("action") == "sync":
+                    history_id = command["readingHistoryId"]
+                    if not recorder or recorder.history_id != history_id:
+                        if recorder:
+                            recorder.finish()
+                        recorder = FocusEpisode(history_id, command["timezone"],
+                            lambda event: print("FOCUS_EVENT " + json.dumps(event), flush=True), time.monotonic)
+                    recorder.set_enabled(command.get("detect") is True)
+            except Exception as exc:
+                ack["error"] = str(exc)
+            print("FOCUS_ACK " + json.dumps(ack), flush=True)
         ok, frame = cap.read()
         if not ok:
             print("[camera-focus] camera read failed, stopping")
@@ -219,6 +254,9 @@ def main():
         frame_index += 1
         state_history.append(raw_state)
         state = Counter(state_history).most_common(1)[0][0] if len(state_history) >= 3 else raw_state
+
+        if recorder:
+            recorder.observe(state)
 
         is_distracted = state in ("side", "back")
         is_absent = state == "absent"

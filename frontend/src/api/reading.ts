@@ -1,4 +1,5 @@
 import type { StoryPage } from "../types/story";
+import { flushFocusEvents, stopFocusSession } from "./focusSession";
 
 type ApiResponse<T> = {
   success: boolean;
@@ -60,6 +61,7 @@ export async function getNextReadingPart(
   readingHistoryId: number,
   selectedLevel: number,
 ): Promise<ReadingPartResult> {
+  await flushFocusEvents(readingHistoryId);
   const response = await fetch(
     `/api/reading-histories/${readingHistoryId}/next-part`,
     {
@@ -76,6 +78,7 @@ export async function getNextReadingPart(
 }
 
 export async function endReading(readingHistoryId: number): Promise<void> {
+  await stopFocusSession(readingHistoryId);
   const response = await fetch(
     `/api/reading-histories/${readingHistoryId}/end`,
     {
