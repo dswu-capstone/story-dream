@@ -171,7 +171,7 @@ function handleSession(res) {
       realtime: realtime.available,
       narration: Boolean(config.fishAudioApiKey)
     },
-    focus: { source: config.focusSource }
+    focus: { source: config.focusSource, timezone: config.focusTimeZone }
   });
 }
 
@@ -293,11 +293,11 @@ const server = http.createServer(async (req, res) => {
     }
     // 브라우저 웹캠 프레임 1장을 YOLO 로 분류 (browser 모드)
     if (req.method === "POST" && p === "/api/detect-pose") {
-      if (!poseWorker) return sendJson(res, 200, { ok: true, state: "absent" });
+      if (!poseWorker) return sendJson(res, 200, { ok: true, state: "absent", source: config.focusSource });
       const body = await readJsonBody(req);
       if (!body.image) return sendJson(res, 400, { ok: false, error: "Missing image" });
       const { state } = await poseWorker.classify(body.image);
-      return sendJson(res, 200, { ok: true, state });
+      return sendJson(res, 200, { ok: true, state, source: config.focusSource });
     }
     if (req.method === "POST" && p === "/api/quiz-log") {
       const body = await readJsonBody(req);

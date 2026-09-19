@@ -1,5 +1,8 @@
 # 5단계: Pi 집중도 감지 → Spring FocusLog 기록
 
+> browser 보완 구현과 PC 실행 절차는 [browser 기록 문서](../../frontend/docs/browser-focus-recording.md)를 참고한다.
+> 아래 Python 실행·재시도·세션 제어 설명은 camera 모드 기준이다.
+
 ## 기존 기능 보존과 실제 실행 경로
 
 저장소 코드로 확인한 경로이며 실제 Pi에서 실행했다는 의미는 아니다.
@@ -22,8 +25,9 @@ handleSignal의 이벤트 ID와 timestamp 처리, SSE, 모델 분류/스무딩�
 
 브라우저 모드도 삭제하거나 강제로 끄지 않았다. 기존 `/session`의 focus.source에 따라
 React의 BrowserFocusMonitor가 선택되는 기존 로직을 유지한다.
-Backend 기록의 유일한 생성자는 Python FocusEpisode이다. 브라우저와 기존 HTTP
-상호작용 신호는 FocusEventSender에 넣지 않으므로 Backend 기록이 중복 생성되지 않는다.
+camera 모드의 Backend 기록 생성자는 Python FocusEpisode이고 browser 모드에서는
+기존 smoothing 결과를 사용하는 프론트 기록기가 생성한다. 브라우저와 기존 HTTP
+상호작용 신호는 Node FocusEventSender에 넣지 않으므로 두 경로가 같은 이벤트를 생성하지 않는다.
 
 ## 새 기록 전용 연결
 
