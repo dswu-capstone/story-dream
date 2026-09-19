@@ -4,9 +4,11 @@
  */
 
 const { spawn } = require("child_process");
+const { createInterface } = require("readline");
+const { FocusRecording } = require("./FocusRecording");
 
 class FocusMonitor {
-  constructor({ enabled, pythonBin, script, serverPort, sse }) {
+  constructor({ enabled, pythonBin, script, serverPort, sse, backendBaseUrl, timezone }) {
     this.enabled = enabled;
     this.pythonBin = pythonBin;
     this.script = script;
@@ -16,6 +18,7 @@ class FocusMonitor {
     this.restarts = 0;
     this.latest = null;
     this.latestFrame = null; // 주석 입힌 최신 카메라 프레임 (base64 JPEG)
+    this.recording = new FocusRecording({ enabled, baseUrl: backendBaseUrl, timezone });
   }
 
   start() {
@@ -30,9 +33,17 @@ class FocusMonitor {
         APP_SERVER_URL: `http://127.0.0.1:${this.serverPort}`,
         PYTHONUNBUFFERED: "1"
       },
-      stdio: ["ignore", "inherit", "inherit"]
+      stdio: ["pipe", "pipe", "inherit"]
     });
+    const child = this.process;
+    this.recording.attach(child);
+    createInterface({ input: child.stdout }).on("line", line => {
+      if (this.recording.child === child && this.recording.handleLine(line)) return;
+      console.log(line);
+    });
+    child.on("error", error => this.recording.fail(error));
     this.process.on("exit", (code) => {
+      this.recording.detach(child);
       this.process = null;
       if (code !== 0 && this.restarts < 5) {
         this.restarts += 1;
@@ -46,6 +57,7 @@ class FocusMonitor {
   }
 
   stop() {
+    this.recording.cancel();
     if (this.process) this.process.kill();
   }
 
@@ -86,7 +98,8 @@ class FocusMonitor {
       lastSignal: this.latest
         ? { eventType: this.latest.eventType, state: this.latest.state, timestamp: this.latest.timestamp }
         : null,
-      lastFrameAt: this.latestFrame ? this.latestFrame.timestamp : null
+      lastFrameAt: this.latestFrame ? this.latestFrame.timestamp : null,
+      recording: this.recording.status()
     };
   }
 }

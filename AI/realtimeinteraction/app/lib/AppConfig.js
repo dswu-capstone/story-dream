@@ -44,6 +44,8 @@ class AppConfig {
     // 서버 카메라(camera_focus.py)는 camera 모드에서만, CAMERA_FOCUS=0 이면 강제 비활성
     this.cameraFocusEnabled = this.focusSource === "camera" && env.CAMERA_FOCUS !== "0";
     this.cameraFocusScript = path.join(appDir, "camera_focus.py");
+    this.backendBaseUrl = env.BACKEND_BASE_URL || env.VITE_BACKEND_PROXY_TARGET || "";
+    this.focusTimeZone = env.FOCUS_TIME_ZONE || "";
     this.poseWorkerScript = path.join(appDir, "pose_worker.py");
     this.voiceCloningScript = path.join(appDir, "voice_cloning.py");
     this.buildReferenceScript = path.join(appDir, "build_reference.py");

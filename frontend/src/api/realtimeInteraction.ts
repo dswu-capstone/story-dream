@@ -21,6 +21,7 @@ export type RealtimeSession = {
   };
   focus?: {
     source?: "browser" | "camera";
+    timezone?: string;
   };
 };
 

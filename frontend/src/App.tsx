@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import KioskExitButton from "./components/KioskExitButton/kioskExitButton";
+import FocusSessionLifecycle from "./components/FocusSessionLifecycle";
 import StartPage from "./pages/StartPage/startPage";
 import InteractionPage from "./pages/InteractionPage/interactionPage";
 import LoginPage from "./pages/LoginPage/loginPage";
@@ -23,6 +24,7 @@ import RequireGuardianAuth from "./components/RequireGuardianAuth/requireGuardia
 function App() {
   return (
     <BrowserRouter>
+      <FocusSessionLifecycle />
       <Routes>
         <Route path="/" element={<StartPage />} />
         <Route path="/children/select" element={<ProfileSelectPage />} />
