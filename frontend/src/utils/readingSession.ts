@@ -32,6 +32,7 @@ export function loadReadingSession(): ReadingSession | null {
 
 export function saveReadingSession(session: ReadingSession) {
   sessionStorage.setItem(READING_SESSION_KEY, JSON.stringify(session));
+  window.dispatchEvent(new Event("reading-session-changed"));
 }
 
 export function getReadingPageProgress(session: ReadingSession) {
@@ -97,4 +98,5 @@ export function createNextReadingPageProgress(
 
 export function clearReadingSession() {
   sessionStorage.removeItem(READING_SESSION_KEY);
+  window.dispatchEvent(new Event("reading-session-changed"));
 }

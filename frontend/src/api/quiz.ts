@@ -1,4 +1,5 @@
 import type { Quiz } from "../types/quiz";
+import { flushFocusEvents } from "./focusSession";
 
 type QuizResponse = {
   quizId: number;
@@ -210,6 +211,7 @@ export async function submitQuiz({
   readingHistoryId,
   selectedAnswer,
 }: SubmitQuizParams): Promise<QuizSubmitResult> {
+  await flushFocusEvents(readingHistoryId);
   const accessToken = localStorage.getItem("accessToken");
 
   if (!accessToken) {
