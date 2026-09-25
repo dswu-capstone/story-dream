@@ -8,10 +8,12 @@ import com.storydream.backend.domain.quiz.entity.Quiz;
 import com.storydream.backend.domain.quiz.entity.QuizResult;
 import com.storydream.backend.domain.quiz.repository.QuizRepository;
 import com.storydream.backend.domain.quiz.repository.QuizResultRepository;
-import com.storydream.backend.domain.reading.dto.NextPartRequest;
-import com.storydream.backend.domain.reading.dto.NextPartResponse;
+import com.storydream.backend.domain.reading.dto.DifficultyDecisionResult;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
+import com.storydream.backend.domain.reading.entity.ReadingLog;
 import com.storydream.backend.domain.reading.repository.ReadingHistoryRepository;
+import com.storydream.backend.domain.reading.repository.ReadingLogRepository;
+import com.storydream.backend.domain.reading.service.DifficultyDecisionService;
 import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ public class QuizServiceImpl implements QuizService {
     private final QuizRepository quizRepository;
     private final QuizResultRepository quizResultRepository;
     private final ReadingHistoryRepository readingHistoryRepository;
+    private final ReadingLogRepository readingLogRepository;
+    private final DifficultyDecisionService difficultyDecisionService;
 
 
     @Override
@@ -68,10 +72,39 @@ public class QuizServiceImpl implements QuizService {
                 );
 
         ReadingHistory readingHistory = readingHistoryRepository
-                .findById(request.readingHistoryId())
+                .findByIdForUpdate(request.readingHistoryId())
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.READING_HISTORY_NOT_FOUND)
                 );
+
+        ReadingLog currentReadingLog = readingLogRepository
+                .findTopByReadingHistoryIdOrderByIdDesc(request.readingHistoryId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.READING_LOG_NOT_FOUND));
+
+        if (!currentReadingLog.getPartType().equals(quiz.getPartType())) {
+            throw new BusinessException(ErrorCode.QUIZ_PART_MISMATCH);
+        }
+
+        boolean hasNextQuiz = quizRepository.existsByOriginalStoryIdAndPartTypeAndOrderNumGreaterThan(
+                quiz.getOriginalStory().getId(),
+                quiz.getPartType(),
+                quiz.getOrderNum()
+        );
+        boolean isLastQuizOfPart = !hasNextQuiz;
+
+        QuizResult existingResult = quizResultRepository
+                .findByReadingHistoryIdAndQuizId(request.readingHistoryId(), quizId)
+                .orElse(null);
+
+        if (existingResult != null) {
+            return createSubmitResponse(
+                    existingResult.getIsCorrect(),
+                    quiz,
+                    isLastQuizOfPart,
+                    currentReadingLog.getLevel(),
+                    request.readingHistoryId()
+            );
+        }
 
         boolean isCorrect = quiz.getAnswer()
                 .equals(request.selectedAnswer());
@@ -83,22 +116,39 @@ public class QuizServiceImpl implements QuizService {
                 .isCorrect(isCorrect)
                 .build();
 
-        quizResultRepository.save(quizResult);
+        quizResultRepository.saveAndFlush(quizResult);
 
-        // 해당 파트에 다음 퀴즈 존재 여부 조회
-        boolean hasNextQuiz = quizRepository.existsByOriginalStoryIdAndPartTypeAndOrderNumGreaterThan(
-                quiz.getOriginalStory().getId(),
-                quiz.getPartType(),
-                quiz.getOrderNum()
+        return createSubmitResponse(
+                isCorrect,
+                quiz,
+                isLastQuizOfPart,
+                currentReadingLog.getLevel(),
+                request.readingHistoryId()
         );
+    }
 
-        boolean isLastQuizOfPart = !hasNextQuiz;
+    private QuizSubmitResponse createSubmitResponse(
+            boolean isCorrect,
+            Quiz quiz,
+            boolean isLastQuizOfPart,
+            Integer currentLevel,
+            Integer readingHistoryId
+    ) {
+        Integer recommendedLevel = currentLevel;
+
+        if (isLastQuizOfPart) {
+            DifficultyDecisionResult decision = difficultyDecisionService.decide(
+                    readingHistoryId,
+                    quiz.getPartType()
+            );
+            recommendedLevel = decision.nextLevel();
+        }
 
         return new QuizSubmitResponse(
                 isCorrect,
                 quiz.getAnswer(),
                 isLastQuizOfPart,
-                2 // 난이도 변경 로직은 추후에 추가
+                recommendedLevel
         );
     }
 

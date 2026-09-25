@@ -20,10 +20,10 @@ public record ChildCreateRequest(
         @Max(3)
         Integer defaultLevel,
 
-        String[] interest,
+        String[] interest
 
-        @NotNull
-        Boolean useParentVoice
+//        @NotNull
+//        Boolean useParentVoice
 
 ) {
 }

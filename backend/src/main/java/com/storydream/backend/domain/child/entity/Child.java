@@ -36,8 +36,8 @@ public class Child {
     @Column(name = "default_level", nullable = false)
     private Integer defaultLevel;
 
-    @Column(name = "use_parent_voice", nullable = false)
-    private Boolean useParentVoice;
+//    @Column(name = "use_parent_voice", nullable = false)
+//    private Boolean useParentVoice;
 
 
     @Column(name = "created_at")
@@ -52,15 +52,15 @@ public class Child {
             String name,
             String[] interest,
             LocalDate birthDate,
-            Integer defaultLevel,
-            Boolean useParentVoice
+            Integer defaultLevel
+            // Boolean useParentVoice
     ) {
         this.guardian = guardian;
         this.name = name;
         this.interest = interest;
         this.birthDate = birthDate;
         this.defaultLevel = defaultLevel;
-        this.useParentVoice = useParentVoice;
+        // this.useParentVoice = useParentVoice;
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
@@ -70,8 +70,8 @@ public class Child {
             String name,
             LocalDate birthDate,
             Integer defaultLevel,
-            String[] interest,
-            Boolean useParentVoice
+            String[] interest
+            // Boolean useParentVoice
     ) {
         if (name != null) {
             this.name = name;
@@ -89,9 +89,9 @@ public class Child {
             this.interest = interest;
         }
 
-        if (useParentVoice != null) {
-            this.useParentVoice = useParentVoice;
-        }
+//        if (useParentVoice != null) {
+//            this.useParentVoice = useParentVoice;
+//        }
         this.updatedAt = LocalDateTime.now();
     }
 }

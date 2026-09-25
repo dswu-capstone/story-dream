@@ -7,6 +7,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReadingLogRepository extends JpaRepository<ReadingLog, Integer> {
+    boolean existsByReadingHistoryIdAndPartType(Integer readingHistoryId, String partType);
+
     Optional<ReadingLog> findTopByReadingHistoryIdOrderByIdDesc(Integer readingHistoryId);
+    Optional<ReadingLog> findTopByReadingHistoryIdAndPartTypeOrderByIdDesc(
+            Integer readingHistoryId,
+            String partType
+    );
     List<ReadingLog> findAllByReadingHistoryIdOrderByCreatedAtAsc(Integer readingHistoryId);
 }

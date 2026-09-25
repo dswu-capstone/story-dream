@@ -51,7 +51,7 @@ public class ChildServiceImpl implements ChildService {
                 .birthDate(request.birthDate())
                 .defaultLevel(request.defaultLevel())
                 .interest(request.interest())
-                .useParentVoice(request.useParentVoice())
+                // .useParentVoice(request.useParentVoice())
                 .build();
 
         childRepository.save(child);
@@ -70,8 +70,8 @@ public class ChildServiceImpl implements ChildService {
                 child.getName(),
                 child.getBirthDate(),
                 child.getDefaultLevel(),
-                child.getInterest(),
-                child.getUseParentVoice()
+                child.getInterest()
+                // child.getUseParentVoice()
         );
     }
 
@@ -89,8 +89,8 @@ public class ChildServiceImpl implements ChildService {
                 request.name(),
                 request.birthDate(),
                 request.defaultLevel(),
-                request.interest(),
-                request.useParentVoice()
+                request.interest()
+                // request.useParentVoice()
         );
     }
 

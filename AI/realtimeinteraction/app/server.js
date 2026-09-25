@@ -57,6 +57,8 @@ const focus = new FocusMonitor({
   pythonBin: config.pythonBin,
   script: config.cameraFocusScript,
   serverPort: config.port,
+  backendBaseUrl: config.backendBaseUrl,
+  timezone: config.focusTimeZone,
   sse
 });
 // 브라우저 웹캠 모드에서만 상주 YOLO 워커를 띄운다.
@@ -169,7 +171,7 @@ function handleSession(res) {
       realtime: realtime.available,
       narration: Boolean(config.fishAudioApiKey)
     },
-    focus: { source: config.focusSource }
+    focus: { source: config.focusSource, timezone: config.focusTimeZone }
   });
 }
 
@@ -270,17 +272,32 @@ const server = http.createServer(async (req, res) => {
     }
 
     // --- 집중 감지 / 퀴즈 로그 / Realtime ---
+    if (req.method === "GET" && p === "/api/focus/session") {
+      return sendJson(res, 200, { ok: true, ...focus.status() });
+    }
+    if (req.method === "POST" && p === "/api/focus/session") {
+      const body = await readJsonBody(req);
+      try {
+        if (body.action === "stop") await focus.recording.finishSession(body.readingHistoryId);
+        else if (body.action === "flush") await focus.recording.flush(body.readingHistoryId);
+        else if (body.action === "sync") await focus.recording.setSession(body.readingHistoryId, body.detect === true);
+        else return sendJson(res, 400, { ok: false, error: "Unknown focus session action" });
+        return sendJson(res, 200, { ok: true, ...focus.recording.status() });
+      } catch (error) {
+        return sendJson(res, 409, { ok: false, error: error.message });
+      }
+    }
     if (req.method === "POST" && p === "/api/focus") {
       const body = await readJsonBody(req);
       return sendJson(res, 200, { ok: true, signal: focus.handleSignal(body) });
     }
     // 브라우저 웹캠 프레임 1장을 YOLO 로 분류 (browser 모드)
     if (req.method === "POST" && p === "/api/detect-pose") {
-      if (!poseWorker) return sendJson(res, 200, { ok: true, state: "absent" });
+      if (!poseWorker) return sendJson(res, 200, { ok: true, state: "absent", source: config.focusSource });
       const body = await readJsonBody(req);
       if (!body.image) return sendJson(res, 400, { ok: false, error: "Missing image" });
       const { state } = await poseWorker.classify(body.image);
-      return sendJson(res, 200, { ok: true, state });
+      return sendJson(res, 200, { ok: true, state, source: config.focusSource });
     }
     if (req.method === "POST" && p === "/api/quiz-log") {
       const body = await readJsonBody(req);

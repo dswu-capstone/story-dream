@@ -1,4 +1,5 @@
 import { realtimeInteractionApiBase } from "./realtimeInteraction";
+import { browserFocusRecording } from "./browserFocusRecording";
 
 export const FOCUS_INTERACTION_THRESHOLD_SECONDS = 10;
 
@@ -14,6 +15,7 @@ export type FocusSignal = {
 type DetectPoseResponse = {
   ok: boolean;
   state?: string;
+  source?: "browser" | "camera";
   error?: string;
 };
 
@@ -189,6 +191,7 @@ export class BrowserFocusMonitor {
   }
 
   stop() {
+    browserFocusRecording.observationStopped();
     this.stopped = true;
     this.running = false;
     this.paused = false;
@@ -202,10 +205,12 @@ export class BrowserFocusMonitor {
     if (!image) return;
 
     this.busy = true;
+    const recordingToken = browserFocusRecording.sampleToken();
     try {
       const result = await postJson<DetectPoseResponse>("/detect-pose", { image });
-      this.handleState(result.state || "absent");
+      this.handleState(result.state || "absent", () => this.running ? recordingToken : null, result.source);
     } catch {
+      browserFocusRecording.observationStopped();
       // 일시적인 감지 실패는 다음 프레임에서 다시 시도한다.
     } finally {
       this.busy = false;
@@ -225,12 +230,13 @@ export class BrowserFocusMonitor {
     return this.canvas.toDataURL("image/jpeg", 0.6).split(",")[1] || null;
   }
 
-  private handleState(rawState: string) {
+  private handleState(rawState: string, recordingToken: () => ReturnType<typeof browserFocusRecording.sampleToken>, source?: string) {
     this.history.push(rawState);
     if (this.history.length > SMOOTH_WINDOW) this.history.shift();
     const state = this.history.length >= 3
       ? getMostCommonValue(this.history)
       : rawState;
+    browserFocusRecording.observe(state, recordingToken(), source);
     const now = performance.now() / 1000;
     const distracted = state === "side" || state === "back";
     const absent = state === "absent";
