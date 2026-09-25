@@ -77,8 +77,26 @@ export async function getNextReadingPart(
   );
 }
 
+// export async function endReading(readingHistoryId: number): Promise<void> {
+//   await stopFocusSession(readingHistoryId);
+//   const response = await fetch(
+//     `/api/reading-histories/${readingHistoryId}/end`,
+//     {
+//       method: "PATCH",
+//       headers: getAuthorizationHeaders(),
+//     },
+//   );
+//
+//   await parseResponse<null>(response, "동화 읽기를 종료하지 못했습니다.");
+// }
+
 export async function endReading(readingHistoryId: number): Promise<void> {
-  await stopFocusSession(readingHistoryId);
+  try {
+    await stopFocusSession(readingHistoryId);
+  } catch (error) {
+    console.warn("집중도 세션 종료 실패. 독서 종료는 계속 진행합니다.", error);
+  }
+
   const response = await fetch(
     `/api/reading-histories/${readingHistoryId}/end`,
     {
