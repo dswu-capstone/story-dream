@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { sendLedPower } from "../../api/led";
+import { readKioskFlags } from "./kioskFlags";
 import "./kioskExitButton.css";
 
 /**
@@ -10,33 +12,6 @@ import "./kioskExitButton.css";
  * 일반 브라우저(npm run dev 만 실행)에서는 렌더링되지 않는다.
  */
 
-const KIOSK_KEY = "sd:kiosk";
-const PORT_KEY = "sd:quitPort";
-const CONFIRM_KEY = "sd:kioskConfirm";
-
-// 최초 진입 URL 의 ?kiosk=1 을 sessionStorage 에 저장해둔다.
-// 라우터로 페이지를 옮기면 쿼리스트링이 사라지기 때문.
-function readKioskFlags() {
-  const params = new URLSearchParams(window.location.search);
-
-  if (params.get("kiosk") === "1") {
-    sessionStorage.setItem(KIOSK_KEY, "1");
-
-    const port = params.get("quitPort");
-    if (port) sessionStorage.setItem(PORT_KEY, port);
-
-    const confirm = params.get("kioskConfirm");
-    if (confirm) sessionStorage.setItem(CONFIRM_KEY, confirm);
-  }
-
-  return {
-    isKiosk: sessionStorage.getItem(KIOSK_KEY) === "1",
-    port: sessionStorage.getItem(PORT_KEY) ?? "5174",
-    // 아이가 실수로 눌러 앱이 꺼지는 걸 막기 위해 기본은 확인창을 띄운다.
-    needsConfirm: sessionStorage.getItem(CONFIRM_KEY) !== "0",
-  };
-}
-
 function KioskExitButton() {
   const [flags] = useState(readKioskFlags);
   const [asking, setAsking] = useState(false);
@@ -46,6 +21,8 @@ function KioskExitButton() {
 
   const quit = async () => {
     setQuitting(true);
+    // 앱이 꺼지면 LED 도 끈다. (브라우저가 죽기 전에 나가도록 keepalive 요청)
+    sendLedPower(false);
     try {
       await fetch(`http://127.0.0.1:${flags.port}/quit`, {
         method: "POST",

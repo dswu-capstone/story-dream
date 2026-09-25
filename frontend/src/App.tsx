@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
+import LedController from "./components/LedController/ledController";
 import KioskExitButton from "./components/KioskExitButton/kioskExitButton";
 import FocusSessionLifecycle from "./components/FocusSessionLifecycle";
 import StartPage from "./pages/StartPage/startPage";
@@ -45,6 +46,7 @@ function App() {
         <Route path="/guardian/children/:childId" element={<ChildEditPage />} />
         <Route path="/guardian/children/:childId/reading-summary" element={<RequireGuardianAuth><ReadingSummaryPage /></RequireGuardianAuth>} />
       </Routes>
+      <LedController />
       <KioskExitButton />
     </BrowserRouter>
   );

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import "./storyResultPage.css";
 
+import { sendLedQuiz } from "../../api/led";
 import { endReading } from "../../api/reading";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
@@ -48,6 +49,13 @@ function StoryResultPage() {
       navigate("/stories/quiz", { replace: true });
     }
   }, [navigate, resultState]);
+
+  // 퀴즈 결과를 LED 로: 정답이면 초록 60개, 오답이면 빨강 60개.
+  useEffect(() => {
+    if (resultState) {
+      sendLedQuiz(resultState.isCorrect);
+    }
+  }, [resultState]);
 
   if (!resultState) {
     return null;
