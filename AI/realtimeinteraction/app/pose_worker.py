@@ -19,9 +19,18 @@ import json
 import os
 import sys
 
+# 라즈베리파이(4코어)에서 ONNX/OpenCV 가 코어를 다 먹으면 브라우저·오디오가 끊긴다.
+# 추론 스레드를 제한해 보드가 다른 일을 할 여유를 남긴다. (import 전에 설정해야 함)
+_THREADS = os.environ.get("POSE_THREADS", "2")
+os.environ.setdefault("OMP_NUM_THREADS", _THREADS)
+os.environ.setdefault("OPENBLAS_NUM_THREADS", _THREADS)
+os.environ.setdefault("MKL_NUM_THREADS", _THREADS)
+
 import numpy as np
 import cv2
 from ultralytics import YOLO
+
+cv2.setNumThreads(int(_THREADS))
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.environ.get("YOLO_POSE_MODEL", os.path.join(HERE, "yolov8n-pose.onnx"))

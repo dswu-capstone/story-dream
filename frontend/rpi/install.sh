@@ -22,17 +22,34 @@ if [ -z "$DESKTOP_DIR" ] || [ ! -d "$DESKTOP_DIR" ]; then
   DESKTOP_DIR="$HOME/Desktop"
 fi
 
+OSK_AUTOSTART="$AUTOSTART_DIR/story-dream-osk.desktop"
+
 if [ "${1:-}" = "--uninstall" ]; then
   rm -f "$DESKTOP_FILE" "$DESKTOP_DIR/story-dream.desktop" \
-        "$AUTOSTART_DIR/story-dream.desktop" \
+        "$AUTOSTART_DIR/story-dream.desktop" "$OSK_AUTOSTART" \
         "$ICON_DIR/story-dream.png" "$ICON_DIR/story-dream.svg"
+  pkill -f "osk-langwatch.sh" 2>/dev/null || true
   update-desktop-database "$APPS_DIR" 2>/dev/null || true
   echo "제거했습니다. (설정 $CONF_DIR 은 남겨둡니다)"
   exit 0
 fi
 
-mkdir -p "$APPS_DIR" "$ICON_DIR" "$CONF_DIR" "$DESKTOP_DIR"
-chmod +x "$LAUNCHER"
+mkdir -p "$APPS_DIR" "$ICON_DIR" "$CONF_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR"
+chmod +x "$LAUNCHER" "$RPI_DIR/osk.sh" "$RPI_DIR/osk-langwatch.sh" 2>/dev/null || true
+
+# ---------------------------------------------------------------- 화면 키보드 자동시작
+# story-dream 앱뿐 아니라 로그인 직후·터미널·바탕화면 등 어디서나 화면 키보드가
+# 뜨도록 세션 자동시작에 등록한다. (Wayland=squeekboard, X11=onboard 자동 선택)
+cat > "$OSK_AUTOSTART" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Story Dream 화면 키보드
+Comment=화면 키보드(onboard/squeekboard)를 세션에 맞게 띄웁니다
+Exec=$RPI_DIR/osk.sh
+X-GNOME-Autostart-enabled=true
+NoDisplay=true
+EOF
+echo "화면 키보드 자동시작 등록: $OSK_AUTOSTART"
 
 # ---------------------------------------------------------------- 아이콘 준비
 SRC_ICON="$APP_DIR/src/assets/logo.svg"
@@ -98,11 +115,27 @@ SD_EXIT_CONFIRM=1
 
 # 앱 종료 후 동작: desktop(바탕화면 복귀) | poweroff | reboot
 SD_ON_EXIT=desktop
+
+# 1 = LED 서버(../hardware/led)도 같이 띄움, 0 = 안 띄움
+SD_ENABLE_LED=1
+# 1 = 엔코더 음량 스크립트(../hardware/encoder)도 같이 띄움, 0 = 안 띄움
+SD_ENABLE_ENCODER=1
+# 1 = 카메라 집중감지/실시간 상호작용 서버(../AI/realtimeinteraction, 4000), 0 = 안 띄움
+SD_ENABLE_INTERACTION=1
+
+# 화면 키보드: 1 = 사용(텍스트칸 누를 때만 표시), 0 = 사용 안 함
+SD_OSK=1
+# 1 = 화면 키보드를 항상 띄워둠 (기본은 필요할 때만)
+SD_OSK_ALWAYS=0
+# 1 = 두벌식 한글 라벨 키보드, 0 = 영문 기본 키보드
+SD_OSK_KO=1
 EOF
   echo "설정 파일 생성: $CONF_DIR/launcher.env"
 else
   # 이미 설정 파일이 있으면 새로 생긴 항목만 덧붙인다(기존 값은 건드리지 않음).
-  for kv in "SD_QUIT_PORT=5174" "SD_EXIT_CONFIRM=1" "SD_ON_EXIT=desktop"; do
+  for kv in "SD_QUIT_PORT=5174" "SD_EXIT_CONFIRM=1" "SD_ON_EXIT=desktop" \
+            "SD_ENABLE_LED=1" "SD_ENABLE_ENCODER=1" "SD_ENABLE_INTERACTION=1" \
+            "SD_OSK=1" "SD_OSK_ALWAYS=0" "SD_OSK_KO=1"; do
     key="${kv%%=*}"
     grep -q "^${key}=" "$CONF_DIR/launcher.env" \
       || printf '%s\n' "$kv" >> "$CONF_DIR/launcher.env"

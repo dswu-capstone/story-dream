@@ -12,7 +12,6 @@ import java.util.Optional;
 
 public interface FocusLogRepository extends JpaRepository<FocusLog, Integer> {
 
-    // 과거 open/close 로그는 확정 여부를 알 수 없으므로 난이도 집계에서 제외한다.
     @Query("""
         SELECT COUNT(f) FROM FocusLog f
          WHERE f.readingHistory.id = :readingHistoryId AND f.partType = :partType
@@ -24,15 +23,14 @@ public interface FocusLogRepository extends JpaRepository<FocusLog, Integer> {
     );
 
     Optional<FocusLog> findByReadingHistoryIdAndEventId(Integer readingHistoryId, String eventId);
-
-    @Query("""
-        SELECT f.partType AS partType,
-               COUNT(f.id) AS distractionCount,
-               COALESCE(SUM(f.durationSec), 0L) AS distractionSec
-          FROM FocusLog f
-         WHERE f.readingHistory.id = :historyId
-         GROUP BY f.partType
-        """)
+    @Query(value = """
+        SELECT f.part_type AS partType,
+               COUNT(*) AS distractionCount,
+               COALESCE(SUM(f.duration_sec), 0) AS distractionSec
+          FROM focus_log f
+         WHERE f.reading_history_id = :historyId
+         GROUP BY f.part_type
+        """, nativeQuery = true)
     List<PartFocusStat> findPartStatsByReadingHistoryId(@Param("historyId") Integer historyId);
 
     Optional<FocusLog> findFirstByReadingHistoryIdAndEndedAtIsNullOrderByStartedAtDesc(

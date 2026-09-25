@@ -1,7 +1,7 @@
 import { realtimeInteractionApiBase } from "./realtimeInteraction";
 import { browserFocusRecording } from "./browserFocusRecording";
 
-export const FOCUS_INTERACTION_THRESHOLD_SECONDS = 15;
+export const FOCUS_INTERACTION_THRESHOLD_SECONDS = 10;
 
 export type FocusSignal = {
   id?: string;
@@ -21,8 +21,19 @@ type DetectPoseResponse = {
 
 const SMOOTH_WINDOW = 8;
 const HEARTBEAT_INTERVAL_SECONDS = 5;
-const DETECT_INTERVAL_MS = 350;
+// 라즈베리파이 CPU 로 YOLO 추론을 돌리므로 너무 자주 보내면 큐가 밀리고
+// 보드 전체가 느려진다. 1초에 한 번이면 10초 임계 판정에 충분하다.
+const DETECT_INTERVAL_MS = 1000;
 const CAPTURE_WIDTH = 256;
+
+/**
+ * 카메라는 한 번에 한 곳만 잡을 수 있다(파이 + USB 웹캠).
+ * React StrictMode 는 개발 모드에서 effect 를 두 번 실행하므로 모니터 인스턴스가
+ * 두 개 생겨 서로 카메라를 뺏다가 getUserMedia 가 멈춰버린다. 또 실시간 상호작용
+ * 화면은 마이크를 잡는데, 카메라가 안 놓인 상태면 둘 다 죽는다.
+ * 그래서 프로세스 전체에서 한 번에 하나만 카메라를 쓰도록 잠근다.
+ */
+let cameraOwner: BrowserFocusMonitor | null = null;
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${realtimeInteractionApiBase}${path}`, {
@@ -78,24 +89,25 @@ export class BrowserFocusMonitor {
   private absentEventSent = false;
   private recoveryPending = false;
   private lastHeartbeat = 0;
+  private paused = false;
+  private pausedAt = 0;
 
-  async start() {
-    if (this.running || !navigator.mediaDevices?.getUserMedia) return;
-    this.stopped = false;
-
+  /** 카메라를 잡고 video/canvas 를 준비한다. 성공하면 true. */
+  private async acquireCamera(): Promise<boolean> {
     let stream: MediaStream;
     try {
+      // facingMode 는 USB 웹캠에 의미가 없고, 일부 환경에서 제약을 못 맞춰 멈춘다.
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: "user" },
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
       });
     } catch (error) {
       console.warn("집중도 감지를 위한 카메라를 사용할 수 없습니다:", error);
-      return;
+      return false;
     }
 
     if (this.stopped) {
       stream.getTracks().forEach((track) => track.stop());
-      return;
+      return false;
     }
     this.stream = stream;
 
@@ -108,8 +120,71 @@ export class BrowserFocusMonitor {
     this.video = video;
     this.canvas = document.createElement("canvas");
     this.context = this.canvas.getContext("2d");
+    return true;
+  }
+
+  /** 카메라를 놓고 판정 요청을 멈춘다(스트림/타이머만 해제, 상태는 보존). */
+  private releaseCamera() {
+    if (this.timer !== null) window.clearInterval(this.timer);
+    this.timer = null;
+    this.stream?.getTracks().forEach((track) => track.stop());
+    if (this.video) {
+      this.video.pause();
+      this.video.srcObject = null;
+    }
+    this.stream = null;
+    this.video = null;
+    this.canvas = null;
+    this.context = null;
+  }
+
+  async start() {
+    if (this.running || !navigator.mediaDevices?.getUserMedia) return;
+    // 다른 인스턴스가 이미 카메라를 쓰고 있으면(StrictMode 이중 마운트 등) 양보한다.
+    if (cameraOwner && cameraOwner !== this) return;
+    cameraOwner = this;
+    this.stopped = false;
+
+    if (!(await this.acquireCamera())) {
+      if (cameraOwner === this) cameraOwner = null;
+      return;
+    }
+
     this.running = true;
+    this.paused = false;
     this.lastHeartbeat = performance.now() / 1000;
+    this.timer = window.setInterval(() => {
+      void this.tick();
+    }, DETECT_INTERVAL_MS);
+  }
+
+  /**
+   * 나레이션 재생처럼 다른 장치가 전력을 쓸 때 카메라를 잠시 놓는다.
+   * 파이 USB 는 웹캠 + 터치스크린을 동시에 감당하지 못해 과전류가 나고,
+   * 그러면 패널이 리셋되면서 HDMI 화면·소리가 같이 끊긴다.
+   * 카메라 스트림과 YOLO 판정 요청을 함께 멈추고, 멈춘 동안은 딴짓 시간으로 세지 않는다.
+   */
+  pause() {
+    if (!this.running || this.paused) return;
+    this.paused = true;
+    this.pausedAt = performance.now() / 1000;
+    this.releaseCamera();
+  }
+
+  /** pause() 로 놓았던 카메라와 판정을 다시 시작한다. */
+  async resume() {
+    if (!this.running || !this.paused) return;
+
+    // 멈춰 있던 시간만큼 기준점을 밀어, 그 사이를 딴짓/부재로 세지 않는다.
+    const elapsed = performance.now() / 1000 - this.pausedAt;
+    if (this.distractSince !== null) this.distractSince += elapsed;
+    if (this.absentSince !== null) this.absentSince += elapsed;
+    this.lastHeartbeat += elapsed;
+    this.paused = false;
+
+    if (!(await this.acquireCamera())) return;
+    if (this.stopped || this.paused) return;
+
     this.timer = window.setInterval(() => {
       void this.tick();
     }, DETECT_INTERVAL_MS);
@@ -119,18 +194,13 @@ export class BrowserFocusMonitor {
     browserFocusRecording.observationStopped();
     this.stopped = true;
     this.running = false;
-    if (this.timer !== null) window.clearInterval(this.timer);
-    this.timer = null;
-    this.stream?.getTracks().forEach((track) => track.stop());
-    if (this.video) this.video.srcObject = null;
-    this.stream = null;
-    this.video = null;
-    this.canvas = null;
-    this.context = null;
+    this.paused = false;
+    this.releaseCamera();
+    if (cameraOwner === this) cameraOwner = null;
   }
 
   private async tick() {
-    if (!this.running || this.busy) return;
+    if (!this.running || this.paused || this.busy) return;
     const image = this.captureFrame();
     if (!image) return;
 

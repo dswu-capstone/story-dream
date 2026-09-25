@@ -9,6 +9,7 @@ import {
   subscribeFocusSignals,
   type FocusSignal,
 } from "../../api/focusInteraction";
+import { sendLedProgress } from "../../api/led";
 import { getNextReadingPart, startReading } from "../../api/reading";
 import { getRealtimeSession } from "../../api/realtimeInteraction";
 import { getStoryDetail } from "../../api/story";
@@ -32,6 +33,12 @@ type StoryReadingLocationState = {
   storyTitle?: string;
   selectedLevel?: number;
 };
+
+// 나레이션을 켤 때 HDMI 오디오 장치가 열리면서 돌입 전류가 흐르는데,
+// 그 순간 웹캠까지 USB 전류를 쓰면 과전류로 패널이 리셋된다(화면·소리 동시 끊김).
+// 그래서 재생 시작 전후 이 시간만 카메라를 놓았다가 바로 복귀시킨다.
+// 0 이하로 두면 나레이션이 끝날 때까지 카메라를 멈춘다.
+const CAMERA_PAUSE_AFTER_AUDIO_START_MS = 1000;
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error
@@ -57,6 +64,9 @@ function StoryReadingPage() {
   const initializationStarted = useRef(false);
   const focusInteractionTriggered = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // 나레이션 재생 중에는 카메라를 잠시 놓아야 해서 바깥에서도 접근할 수 있게 둔다.
+  const focusMonitorRef = useRef<BrowserFocusMonitor | null>(null);
+  const cameraResumeTimerRef = useRef<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [readingSession, setReadingSession] = useState<ReadingSession | null>(
     () => (shouldAdvancePart ? loadReadingSession() : null),
@@ -210,6 +220,11 @@ function StoryReadingPage() {
     ? getReadingPageProgress(readingSession)
     : { currentPage: 1, totalPages: 1 };
 
+  // 읽기 진행률을 LED 스트립에 반영한다. (예: 10p 중 1p → 60개 중 6개 노란색)
+  useEffect(() => {
+    sendLedProgress(pageProgress.currentPage / pageProgress.totalPages);
+  }, [pageProgress.currentPage, pageProgress.totalPages]);
+
   // 다음 페이지 이미지를 미리 받아두어 페이지 전환 시 바로 표시되도록 합니다.
   useEffect(() => {
     pages
@@ -224,10 +239,19 @@ function StoryReadingPage() {
       });
   }, [currentPageIndex, pages]);
 
+  const resumeCamera = useCallback(() => {
+    if (cameraResumeTimerRef.current !== null) {
+      window.clearTimeout(cameraResumeTimerRef.current);
+      cameraResumeTimerRef.current = null;
+    }
+    void focusMonitorRef.current?.resume();
+  }, []);
+
   const stopAudio = useCallback(() => {
     const audio = audioRef.current;
 
     if (!audio) {
+      resumeCamera();
       return;
     }
 
@@ -235,7 +259,9 @@ function StoryReadingPage() {
     audio.removeAttribute("src");
     audio.load();
     audioRef.current = null;
-  }, []);
+    // 나레이션이 끝났으니 집중도 감지(카메라·YOLO)를 다시 켠다.
+    resumeCamera();
+  }, [resumeCamera]);
 
   useEffect(() => {
     return stopAudio;
@@ -246,6 +272,7 @@ function StoryReadingPage() {
 
     const subscribedAt = Date.now();
     const focusMonitor = new BrowserFocusMonitor();
+    focusMonitorRef.current = focusMonitor;
     let disposed = false;
 
     const handleFocusSignal = (signal: FocusSignal) => {
@@ -272,6 +299,9 @@ function StoryReadingPage() {
 
       focusInteractionTriggered.current = true;
       window.speechSynthesis?.cancel();
+      // 상호작용 화면은 마이크를 잡는다. 파이에서는 카메라를 먼저 완전히 놓아주지
+      // 않으면 둘 다 물려서 죽으므로, 이동 전에 감지를 끊는다.
+      focusMonitor.stop();
       navigate("/stories/interaction", {
         state: {
           focusTrigger: signal.eventType,
@@ -296,6 +326,7 @@ function StoryReadingPage() {
       disposed = true;
       unsubscribe();
       focusMonitor.stop();
+      if (focusMonitorRef.current === focusMonitor) focusMonitorRef.current = null;
     };
   }, [errorMessage, isLoading, navigate, readingSession?.readingHistoryId]);
 
@@ -362,6 +393,11 @@ function StoryReadingPage() {
 
     stopAudio();
 
+    // 파이 USB 는 웹캠 + 터치스크린을 동시에 감당하지 못해 과전류가 나고,
+    // 그러면 패널이 리셋되면서 HDMI 화면·소리가 함께 끊긴다.
+    // 나레이션이 나오는 동안에는 카메라와 YOLO 판정을 멈춘다.
+    focusMonitorRef.current?.pause();
+
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
     audio.onended = () => {
@@ -369,6 +405,18 @@ function StoryReadingPage() {
         stopAudio();
       }
     };
+
+    // 오디오 장치가 열리고 안정되면 카메라를 다시 켠다.
+    // (나레이션이 끝날 때까지 기다리지 않으므로 그 사이에도 집중도 감지가 동작한다)
+    if (CAMERA_PAUSE_AFTER_AUDIO_START_MS > 0) {
+      audio.onplaying = () => {
+        if (audioRef.current !== audio) return;
+        cameraResumeTimerRef.current = window.setTimeout(() => {
+          cameraResumeTimerRef.current = null;
+          void focusMonitorRef.current?.resume();
+        }, CAMERA_PAUSE_AFTER_AUDIO_START_MS);
+      };
+    }
 
     void audio.play().catch((error) => {
       if (audioRef.current === audio) {
