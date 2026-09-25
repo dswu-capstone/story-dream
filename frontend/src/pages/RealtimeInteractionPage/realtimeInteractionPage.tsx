@@ -259,7 +259,7 @@ function RealtimeInteractionPage() {
   );
   const [emotion, setEmotion] = useState<DreamyEmotionName>("happy");
   const [statusText, setStatusText] = useState(
-    "드리미와 이야기 버튼을 눌러 시작해 보세요.",
+    "드리미가 말을 걸고 있어요...",
   );
   const [typedAnswer, setTypedAnswer] = useState("");
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
@@ -798,7 +798,20 @@ function RealtimeInteractionPage() {
     navigate(-1);
   };
 
-  const showStartButton = phase === "idle" || phase === "complete";
+  // 이 화면은 아이가 집중을 잃었을 때 자동으로 열리므로, 버튼을 누르게 하지 않고
+  // 들어오자마자 드리미가 먼저 말을 건다. (재시도 버튼은 대화가 끝난 뒤에만 보인다)
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    void startInteraction();
+    // 최초 1회만 실행한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 처음 진입 시에는 시작 버튼을 숨긴다(자동으로 시작하므로).
+  // 대화가 끝난 뒤에만 "한 번 더 이야기하기" 를 보여준다.
+  const showStartButton = phase === "complete";
   const pageProgress = storedReadingSession
     ? getReadingPageProgress(storedReadingSession)
     : null;

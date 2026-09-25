@@ -53,6 +53,13 @@ chmod +x install.sh story-dream-launch.sh
 | `SD_QUIT_PORT` | `5174` | 화면 안 X 버튼용 제어 서버 포트 |
 | `SD_EXIT_CONFIRM` | `1` | `1` = X 누르면 확인창, `0` = 바로 종료 |
 | `SD_ON_EXIT` | `desktop` | 종료 후 동작: `desktop` / `poweroff` / `reboot` |
+| `SD_ENABLE_LED` | `1` | LED 서버(`../hardware/led/led_server.py`, 8765 포트)도 같이 띄움 |
+| `SD_ENABLE_ENCODER` | `1` | 엔코더 음량 스크립트(`../hardware/encoder/encoder_connect.py`)도 같이 띄움 |
+
+LED/엔코더는 `gpiozero`·`board`·`neopixel_spi` 가 깔린 파이썬이 필요합니다(런처는
+`~/yolo-env/bin/python` 을 먼저 찾고 없으면 `python3`). 라이브러리나 스크립트가 없으면
+경고만 찍고 건너뛰므로, 하드웨어가 없는 환경에서도 앱은 정상 실행됩니다.
+앱이 켜지면 LED 가 밝은 노란색으로 켜지고, X 로 종료하면 꺼집니다.
 
 ### dev vs preview
 
@@ -91,11 +98,15 @@ X 를 누르면 여기에 요청이 가고 → 브라우저가 종료되고 → 
 
 ## 종료 후 화면이 검게 남을 때
 
-런처는 종료할 때 화면을 되살리려고 다음을 시도합니다.
+런처는 종료할 때(브라우저 정리보다 **먼저**) 화면을 되살리려고 다음을 시도합니다.
 
 - X11: `xset dpms force on`, `xset s reset` (실행 중 껐던 절전도 원복)
-- Wayland: `wlopm --on '*'`, `swaymsg output '*' dpms on`
-- 바탕화면 프로세스(`pcmanfm`)가 죽어 있으면 다시 띄움
+- Wayland/labwc:
+  - `wlopm --on '*'` — 절전으로 꺼진 출력을 켬
+  - `pkill -HUP labwc` / `pkill -HUP kanshi` — 컴포지터에 전체 다시 그리기 요청
+    (크로미움 `--kiosk` 가 사라진 자리를 월페이퍼로 다시 칠하게 하는 핵심 단계)
+  - `pkill pcmanfm` — 바탕화면 레이어 강제 재생성 (`lwrespawn` 이 즉시 되살림)
+- 감시자(`lwrespawn`)도 없이 바탕화면 프로세스가 죽어 있으면 직접 `pcmanfm --desktop` 을 띄움
 
 그래도 검은 화면이면 원인이 환경마다 다르므로 아래를 실행해서 결과를 확인하세요.
 

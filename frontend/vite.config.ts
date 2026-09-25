@@ -25,6 +25,14 @@ export default defineConfig(({ mode }) => {
             env.VITE_BACKEND_PROXY_TARGET ||
             "http://localhost:8080",
           changeOrigin: true,
+          // 백엔드 CORS 허용 목록이 http://localhost:5173 뿐이라, 앱을 127.0.0.1 로
+          // 열든 localhost 로 열든 항상 이 Origin 으로 프록시한다. (안 그러면 403 Invalid CORS)
+          headers: { origin: "http://localhost:5173" },
+        },
+        "/led-api": {
+          target: "http://localhost:8765",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/led-api/, ""),
         },
       },
     },

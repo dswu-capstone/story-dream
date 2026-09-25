@@ -103,17 +103,11 @@
   color: #555;
 }
 
-.child-profile-page__voice-status {
-  justify-self: end;
-  color: #439447;
-  font-weight: 500;
-}
-
 .child-profile-page__submit-button {
   display: block;
   width: 160px;
   height: 40px;
-  margin: 26px auto 0;
+  margin: 24px auto 0;
   border: none;
   border-radius: 10px;
   background: #fff3f0;
