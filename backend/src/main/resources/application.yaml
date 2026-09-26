@@ -31,8 +31,14 @@ story:
       version: v1
 ai:
   server:
-    base-url: ${AI_SERVER_BASE_URL:http://localhost:8000} # ${변수명:기본값}
+    base-url: ${AI_SERVER_BASE_URL:http://localhost:8000}
 
 aws:
   s3:
     bucket: project4-37-sydney-s3-231629457672-ap-southeast-2-an
+
+oauth:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:5173/oauth/google/callback}

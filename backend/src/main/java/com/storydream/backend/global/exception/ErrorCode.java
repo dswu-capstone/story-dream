@@ -13,6 +13,7 @@ public enum ErrorCode {
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
     GUARDIAN_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    GOOGLE_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "구글 로그인에 실패했습니다."),
 
     INVALID_STORY_LEVEL(HttpStatus.BAD_REQUEST, "잘못된 동화 난이도입니다."),
     STORY_NOT_FOUND(HttpStatus.NOT_FOUND, "동화를 찾을 수 없습니다."),
