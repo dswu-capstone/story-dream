@@ -34,11 +34,14 @@ public class DifficultyDecisionService {
                 )
                 .orElseThrow(() -> new BusinessException(ErrorCode.READING_LOG_NOT_FOUND));
 
+        // 현재 파트에서 퀴즈 맞은 개수
         long correctCount = quizResultRepository
                 .countCorrectByReadingHistoryIdAndPartType(
                         readingHistoryId,
                         partType.getDbValue()
                 );
+
+        // 현재 파트의 집중 이탈 횟수
         long distractionCount = focusLogRepository
                 .countByReadingHistoryIdAndPartType(readingHistoryId, partType);
 
