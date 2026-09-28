@@ -38,10 +38,20 @@ docker compose ps
 
 1. 필수 Secrets와 SSH 서버 키를 검증한다.
 2. 서버의 배포 잠금을 획득하고 작업 트리와 브랜치를 확인한다.
-3. `git fetch origin main`과 `git merge --ff-only origin/main`으로 최신 main으로 갱신한다. 강제 reset이나 파일 삭제를 하지 않으며, 브랜치가 갈라지거나 서버 전용 커밋이 있으면 중단한다.
-4. `.env` 파일 존재와 Compose 구성을 확인한다. `config --quiet`는 환경변수 값을 출력하지 않고 유효성만 확인한다.
-5. `docker compose build ai-server backend`로 두 이미지를 빌드한다. 이 단계가 실패하면 기존 컨테이너는 계속 실행된다.
-6. `docker compose up -d --no-build --wait --wait-timeout 180 ai-server backend`로 변경된 컨테이너를 교체하고 상태를 기다린다.
+3. `docker system df`로 사용량을 출력하고 `docker builder prune -af`, `docker image prune -af`로 미사용 빌드 캐시와 이미지를 정리한다. 디스크가 가득 찬 상태에서도 Git 갱신 공간을 확보하도록 fetch 전에 수행한다.
+4. `git fetch origin main`과 `git merge --ff-only origin/main`으로 최신 main으로 갱신한다. 강제 reset이나 파일 삭제를 하지 않으며, 브랜치가 갈라지거나 서버 전용 커밋이 있으면 중단한다.
+5. `.env` 파일 존재와 Compose 구성을 확인한다. `config --quiet`는 환경변수 값을 출력하지 않고 유효성만 확인한다.
+6. `docker compose build backend`로 백엔드를 빌드하고 `docker builder prune -af`로 중간 캐시를 정리한 뒤 `docker compose build ai-server`로 AI를 빌드한다. 두 빌드가 겹치지 않게 하며, 빌드 실패 시 기존 컨테이너는 계속 실행된다. 빌드 사이에는 아직 컨테이너가 참조하지 않는 새 백엔드 이미지를 보존하기 위해 이미지 정리를 하지 않는다.
+7. `docker compose up -d --no-build --wait --wait-timeout 180 ai-server backend`로 변경된 컨테이너를 교체하고 상태를 기다린다.
+8. 시작 성공 후 미사용 빌드 캐시와 이미지를 다시 정리하고 `docker system df`로 사용량을 출력한다. 빌드 또는 시작 실패 시 이 마지막 정리는 실행하지 않으며 다음 배포 시작 시 다시 정리한다.
+
+### 정리 대상과 영향
+
+- `docker builder prune -af`: 사용하지 않는 빌드 캐시 전체를 정리한다. `-a`는 dangling 캐시뿐 아니라 모든 미사용 캐시, `-f`는 확인 질문 생략을 뜻한다. 다음 빌드의 다운로드·컴파일 시간이 늘어날 수 있다.
+- `docker image prune -af`: 실행 중 또는 중지된 컨테이너가 참조하지 않는 이미지를 태그 유무와 관계없이 정리한다. 태그가 붙은 이전 배포 이미지도 삭제될 수 있어 로컬 롤백용 이미지 보관을 보장하지 않는다.
+- 정리는 StoryDream에만 한정되지 않고 해당 Docker 데몬 전체에 적용된다. 다른 프로젝트의 미사용 이미지·빌드 캐시도 정리 대상이다.
+- 컨테이너, 볼륨, `.env` 파일은 삭제하지 않는다. `docker compose down`도 실행하지 않는다.
+- 캐시 정리만으로 한 번의 빌드에 필요한 공간이 확보되지 않으면 여전히 실패할 수 있다. 이 경우 `df -h`, `df -i`, `docker system df -v`로 확인하고 EC2 밖에서 이미지 빌드하는 구조를 검토한다.
 
 `-d`는 백그라운드 실행, `--no-build`는 앞서 빌드한 이미지 사용, `--wait`는 실행/헬스체크 상태 확인, `--wait-timeout 180`은 상태 확인 제한 시간을 뜻한다. 
 GitHub `concurrency`는 배포를 직렬화하며 실행 중 배포는 취소하지 않는다. 추가 푸시가 몰리면 대기 중 실행이 최신 실행으로 대체될 수 있다. 서버의 `flock`도 같은 잠금을 사용하는 배포의 동시 실행을 차단한다. 수동으로 실행하는 다른 Compose 명령까지 차단하는 것은 아니다.
@@ -50,7 +60,7 @@ GitHub `concurrency`는 배포를 직렬화하며 실행 중 배포는 취소하
 
 현재 AI 서비스에는 `/health` 헬스체크가 있고 백엔드에는 헬스체크가 없다. 따라서 성공은 **AI healthy + 백엔드 running**을 의미하며, 백엔드 API와 DB 연결까지 보장하지 않는다. 
 
-이 구성은 단일 EC2 Compose 배포로 컨테이너 교체 중 짧은 중단이 가능하다. 시작 실패 시 Actions는 실패하고 자동 롤백하지 않는다. EC2에서 `docker compose logs --tail 100 backend ai-server`로 원인을 확인하고 수정한 뒤 다시 실행한다. 빌드 캐시는 자동 삭제하지 않으므로 디스크 사용량을 운영 중 점검한다.
+이 구성은 단일 EC2 Compose 배포로 컨테이너 교체 중 짧은 중단이 가능하다. 시작 실패 시 Actions는 실패하고 자동 롤백하지 않는다. EC2에서 `docker compose logs --tail 100 backend ai-server`로 원인을 확인하고 수정한 뒤 다시 실행한다. 미사용 이미지와 캐시는 자동 정리하지만 컨테이너 로그 등은 대상이 아니므로 디스크 사용량을 운영 중 점검한다.
 
 ## 검증
 

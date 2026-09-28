@@ -71,6 +71,14 @@ jobs:
           }
 
           docker compose version
+          # Reclaim space before fetching/building; container-referenced images stay.
+          echo 'Docker disk usage before cleanup'
+          docker system df
+          docker builder prune -af
+          docker image prune -af
+          echo 'Docker disk usage after cleanup'
+          docker system df
+
           # Always deploy the latest main, including when an older run is retried.
           git fetch origin main
           git merge --ff-only origin/main
@@ -83,11 +91,20 @@ jobs:
           echo "Deploying commit $(git rev-parse HEAD)"
 
           # Keep existing containers running until both images finish building.
-          docker compose build ai-server backend
+          docker compose build backend
+          # Release intermediate build cache before building the next service.
+          # Do not prune images here: the new backend image is not in use yet.
+          docker builder prune -af
+          docker compose build ai-server
           if ! docker compose up -d --no-build --wait --wait-timeout 180 ai-server backend; then
             docker compose ps --all
             echo 'Deployment failed. Check container logs on EC2.'
             exit 1
           fi
           docker compose ps
+          # Only prune old images after the new containers have started successfully.
+          docker builder prune -af
+          docker image prune -af
+          echo 'Docker disk usage after deployment cleanup'
+          docker system df
           REMOTE
