@@ -2,15 +2,18 @@ package com.storydream.backend.domain.child.service;
 
 import com.storydream.backend.domain.child.dto.*;
 import com.storydream.backend.domain.child.entity.Child;
+import com.storydream.backend.domain.child.event.ChildRecommendationInvalidatedEvent;
 import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.guardian.entity.Guardian;
 import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import com.storydream.backend.domain.guardian.repository.GuardianRepository;
 import java.util.List;
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +22,7 @@ public class ChildServiceImpl implements ChildService {
 
     private final ChildRepository childRepository;
     private final GuardianRepository guardianRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public ChildListResponse getChildren(Integer guardianId) {
@@ -85,6 +89,9 @@ public class ChildServiceImpl implements ChildService {
 
         Child child = getOwnedChild(guardianId, childId);
 
+        boolean interestChanged = request.interest() != null
+                && !Arrays.equals(child.getInterest(), request.interest());
+
         child.updateProfile(
                 request.name(),
                 request.birthDate(),
@@ -92,6 +99,9 @@ public class ChildServiceImpl implements ChildService {
                 request.interest()
                 // request.useParentVoice()
         );
+        if (interestChanged) {
+            eventPublisher.publishEvent(new ChildRecommendationInvalidatedEvent(childId));
+        }
     }
 
     @Override
@@ -104,6 +114,7 @@ public class ChildServiceImpl implements ChildService {
         Child child = getOwnedChild(guardianId, childId);
 
         childRepository.delete(child);
+        eventPublisher.publishEvent(new ChildRecommendationInvalidatedEvent(childId));
     }
 
     private Child getOwnedChild(
