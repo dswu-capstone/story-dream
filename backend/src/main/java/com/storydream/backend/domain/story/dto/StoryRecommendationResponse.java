@@ -2,7 +2,6 @@ package com.storydream.backend.domain.story.dto;
 
 import java.util.List;
 
-// record: 필드 선언만으로 여러 메서드와 생성자 자동 생성
 public record StoryRecommendationResponse (
     List<StorySummary> stories,
     PageInfo pageInfo
@@ -10,7 +9,8 @@ public record StoryRecommendationResponse (
     public record StorySummary(
             Integer originalStoryId,
             String title,
-            List<String> tags
+            List<String> tags,
+            String coverImageUrl
     ) { }
 
     public record PageInfo(
