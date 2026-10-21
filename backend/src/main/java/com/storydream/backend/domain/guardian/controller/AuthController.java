@@ -1,10 +1,12 @@
 package com.storydream.backend.domain.guardian.controller;
 
+import com.storydream.backend.domain.guardian.dto.GoogleLoginRequest;
 import com.storydream.backend.domain.guardian.dto.GuardianResponse;
 import com.storydream.backend.domain.guardian.dto.LoginRequest;
 import com.storydream.backend.domain.guardian.dto.LoginResponse;
 import com.storydream.backend.domain.guardian.dto.SignupRequest;
 import com.storydream.backend.domain.guardian.service.AuthService;
+import com.storydream.backend.domain.guardian.service.SocialAuthService;
 import com.storydream.backend.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.storydream.backend.domain.guardian.dto.KakaoLoginRequest;
 
 @RestController
 @RequestMapping("/api")
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final SocialAuthService socialAuthService;
 
     @PostMapping("/auth/signup")
     public ResponseEntity<ApiResponse<GuardianResponse>> signup(@Valid @RequestBody SignupRequest req) {
@@ -29,6 +33,16 @@ public class AuthController {
     @PostMapping("/auth/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest req) {
         return ResponseEntity.ok(ApiResponse.success(authService.login(req)));
+    }
+
+    @PostMapping("/auth/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> googleLogin(@Valid @RequestBody GoogleLoginRequest req) {
+        return ResponseEntity.ok(ApiResponse.success(socialAuthService.googleLogin(req.code())));
+    }
+
+    @PostMapping("/auth/kakao")
+    public ResponseEntity<ApiResponse<LoginResponse>> kakaoLogin(@Valid @RequestBody KakaoLoginRequest req) {
+        return ResponseEntity.ok(ApiResponse.success(socialAuthService.kakaoLogin(req.code())));
     }
 
     @GetMapping("/guardians/me")

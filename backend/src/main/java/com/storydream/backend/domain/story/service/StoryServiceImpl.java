@@ -11,6 +11,7 @@ import com.storydream.backend.domain.story.repository.*;
 import com.storydream.backend.global.client.AiRecommendationClient;
 import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
+import com.storydream.backend.global.storage.FileUrlProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class StoryServiceImpl implements StoryService {
     private final StorySentenceRepository storySentenceRepository;
     private final StoryPageRepository storyPageRepository;
     private final ChildRepository childRepository;
+    private final FileUrlProvider fileUrlProvider;
 
     // 추천 Client
     private final AiRecommendationClient aiRecommendationClient;
@@ -114,12 +118,35 @@ public class StoryServiceImpl implements StoryService {
                 );
 
         // 응답 DTO 반환
+//        List<StoryRecommendationResponse.StorySummary> stories =
+//                storyPage.getContent().stream()
+//                        .map(story -> new StoryRecommendationResponse.StorySummary(
+//                                story.originalStoryId(),
+//                                story.title(),
+//                                story.tags()
+//                        ))
+//                        .toList();
+        // 대표 이미지 key 일괄 조회 (originalStoryId -> cover key)
+        List<Integer> storyIds = storyPage.getContent().stream()
+                .map(AiRecommendedStory::originalStoryId)
+                .toList();
+
+        Map<Integer, String> coverKeys = originalStoryRepository.findAllById(storyIds)
+                .stream()
+                .filter(os -> os.getCoverImageUrl() != null)
+                .collect(Collectors.toMap(
+                        OriginalStory::getId,
+                        OriginalStory::getCoverImageUrl
+                ));
+
+        // 응답 DTO 반환
         List<StoryRecommendationResponse.StorySummary> stories =
                 storyPage.getContent().stream()
                         .map(story -> new StoryRecommendationResponse.StorySummary(
                                 story.originalStoryId(),
                                 story.title(),
-                                story.tags()
+                                story.tags(),
+                                generateUrl(coverKeys.get(story.originalStoryId()))
                         ))
                         .toList();
 
@@ -264,5 +291,12 @@ public class StoryServiceImpl implements StoryService {
                 page.getImageKey(),
                 sentences
         );
+    }
+
+    private String generateUrl(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return null;
+        }
+        return fileUrlProvider.generateUrl(objectKey);
     }
 }

@@ -13,6 +13,7 @@ type StorySummaryResponse = {
   title: string;
   languageCode?: StoryLanguageCode;
   tags?: string[];
+  coverImageUrl?: string | null;
 };
 
 type StoryRecommendationApiResponse = {
@@ -236,7 +237,8 @@ export async function getRecommendedStories({
         id: story.originalStoryId,
         title,
         languageCode: resolvedLanguageCode,
-        thumbnailSrc: placeholder.thumbnailSrc,
+        // thumbnailSrc: placeholder.thumbnailSrc,
+        thumbnailSrc: story.coverImageUrl ?? placeholder.thumbnailSrc,
         tagLabel,
       };
     }),
