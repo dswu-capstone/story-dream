@@ -53,6 +53,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.storydream.backend.domain.guardian.dto.KakaoLoginRequest;
 
 @RestController
 @RequestMapping("/api")
@@ -76,6 +77,11 @@ public class AuthController {
     @PostMapping("/auth/google")
     public ResponseEntity<ApiResponse<LoginResponse>> googleLogin(@Valid @RequestBody GoogleLoginRequest req) {
         return ResponseEntity.ok(ApiResponse.success(socialAuthService.googleLogin(req.code())));
+    }
+
+    @PostMapping("/auth/kakao")
+    public ResponseEntity<ApiResponse<LoginResponse>> kakaoLogin(@Valid @RequestBody KakaoLoginRequest req) {
+        return ResponseEntity.ok(ApiResponse.success(socialAuthService.kakaoLogin(req.code())));
     }
 
     @GetMapping("/guardians/me")

@@ -34,7 +34,8 @@ public enum ErrorCode {
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다."),
     QUIZ_PART_MISMATCH(HttpStatus.CONFLICT, "현재 읽고 있는 파트의 퀴즈가 아닙니다."),
     INVALID_PART_TYPE(HttpStatus.BAD_REQUEST, "문단 타입은 서론, 본론, 결론 중 하나여야 합니다."),
-    AI_RECOMMENDATION_FAILED(HttpStatus.BAD_GATEWAY, "AI 추천 시스템 호출에 실패했습니다.");
+    AI_RECOMMENDATION_FAILED(HttpStatus.BAD_GATEWAY, "AI 추천 시스템 호출에 실패했습니다."),
+    KAKAO_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "카카오 로그인에 실패했습니다.");
 
     private final HttpStatus status;
     private final String message;
