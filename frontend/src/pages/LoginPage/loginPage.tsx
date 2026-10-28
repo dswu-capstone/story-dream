@@ -9,6 +9,8 @@ import loginId from "../../assets/loginId.svg";
 import loginPassword from "../../assets/loginPassword.svg";
 import googleLogin from "../../assets/googlLogin.svg";
 import kakaoLogin from "../../assets/kakaoLogin.svg";
+import type { SocialProvider } from "../../types/auth";
+import { startSocialLogin } from "../../utils/socialAuth";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -25,6 +27,24 @@ function LoginPage() {
   const [loginIdValue, setLoginIdValue] = useState("")
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("")
+  const [socialLoginProvider, setSocialLoginProvider] =
+    useState<SocialProvider | null>(null);
+
+  const handleSocialLogin = (provider: SocialProvider) => {
+    setErrorMessage("");
+    setSocialLoginProvider(provider);
+
+    try {
+      startSocialLogin(provider, redirectTo);
+    } catch (error) {
+      setSocialLoginProvider(null);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "소셜 로그인을 시작할 수 없습니다.",
+      );
+    }
+  };
 
   const handleLogin = async () => {
     setErrorMessage("");
@@ -108,11 +128,21 @@ function LoginPage() {
         <p className="find-account">아이디/비밀번호 찾기</p>
 
         <div className="social-login">
-          <button type="button" className="social-login-button">
+          <button
+            type="button"
+            className="social-login-button"
+            onClick={() => handleSocialLogin("kakao")}
+            disabled={socialLoginProvider !== null}
+          >
             <img src={kakaoLogin} alt="카카오 로그인" />
           </button>
 
-          <button type="button" className="social-login-button">
+          <button
+            type="button"
+            className="social-login-button"
+            onClick={() => handleSocialLogin("google")}
+            disabled={socialLoginProvider !== null}
+          >
             <img src={googleLogin} alt="Google 로그인" />
           </button>
         </div>

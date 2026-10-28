@@ -21,6 +21,7 @@ import ReadingSummaryPage from "./pages/ReadingSummaryPage/readingSummaryPage";
 import GuardianHomePage from "./pages/GuardianHomePage/guardianHomePage";
 import ReportProfileSelectPage from "./pages/ReportProfileSelectPage/reportProfileSelectPage";
 import RequireGuardianAuth from "./components/RequireGuardianAuth/requireGuardianAuth";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage/oauthCallbackPage";
 
 function App() {
   return (
@@ -38,6 +39,8 @@ function App() {
         <Route path="/stories/interaction" element={<RealtimeInteractionPage />} />
         <Route path="/guardian/login" element={<LoginPage />} />
         <Route path="/guardian/signup" element={<SignupPage />} />
+        <Route path="/oauth/google/callback" element={<OAuthCallbackPage provider="google" />} />
+        <Route path="/oauth/kakao/callback" element={<OAuthCallbackPage provider="kakao" />} />
         <Route path="/guardian" element={<RequireGuardianAuth><GuardianHomePage /></RequireGuardianAuth>} />
         <Route path="/guardian/reports/select" element={<RequireGuardianAuth><ReportProfileSelectPage /></RequireGuardianAuth>} />
         <Route path="/guardian/reports/:childId" element={<RequireGuardianAuth><ReadingSummaryPage /></RequireGuardianAuth>} />
