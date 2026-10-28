@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { exchangeSocialAuthorizationCode } from "../../api/auth";
-import cloudLeft from "../../assets/cloud1.svg";
-import cloudRight from "../../assets/cloud2.svg";
+import logo from "../../assets/logo.svg";
 import type { SocialProvider } from "../../types/auth";
 import { consumeSocialAuthRequest } from "../../utils/socialAuth";
 
@@ -61,12 +60,13 @@ function OAuthCallbackPage({ provider }: OAuthCallbackPageProps) {
   }, [location.search, navigate, provider]);
 
   return (
-    <main className="oauth-callback-page">
-      <section className="oauth-callback-container" aria-live="polite">
-        <h1 className="oauth-callback-title">소셜 로그인</h1>
+    <main className="oauth-callback-page" aria-busy={!errorMessage}>
+      <img src={logo} alt="StoryDream" className="oauth-callback-logo" />
 
+      <section className="oauth-callback-container" aria-live="polite">
         {errorMessage ? (
           <>
+            <h1 className="oauth-callback-title">로그인에 실패했습니다</h1>
             <p className="oauth-callback-error">{errorMessage}</p>
             <button
               type="button"
@@ -77,19 +77,28 @@ function OAuthCallbackPage({ provider }: OAuthCallbackPageProps) {
             </button>
           </>
         ) : (
-          <p className="oauth-callback-message">로그인을 처리하고 있습니다.</p>
+          <>
+            <h1 className="oauth-callback-title">로그인 진행중입니다</h1>
+            <div
+              className="oauth-callback-spinner"
+              role="status"
+              aria-label="로그인 진행 중"
+            >
+              {Array.from({ length: 12 }, (_, index) => (
+                <span key={index} />
+              ))}
+            </div>
+          </>
         )}
       </section>
 
-      <img
-        src={cloudLeft}
-        alt=""
-        className="oauth-callback-cloud oauth-callback-cloud-left"
+      <div
+        className="oauth-callback-circle oauth-callback-circle-left"
+        aria-hidden="true"
       />
-      <img
-        src={cloudRight}
-        alt=""
-        className="oauth-callback-cloud oauth-callback-cloud-right"
+      <div
+        className="oauth-callback-circle oauth-callback-circle-right"
+        aria-hidden="true"
       />
     </main>
   );
