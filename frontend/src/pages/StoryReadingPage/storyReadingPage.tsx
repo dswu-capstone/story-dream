@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyReadingPage.css";
@@ -10,25 +10,26 @@ import {
   type FocusSignal,
 } from "../../api/focusInteraction";
 import { sendLedProgress } from "../../api/led";
-import { getNextReadingPart, startReading } from "../../api/reading";
 import { getRealtimeSession } from "../../api/realtimeInteraction";
-import { getStoryDetail } from "../../api/story";
 import readingPlaceholder from "../../assets/reading_book.svg";
-import audioIcon from "../../assets/mingcute_voice-line.svg";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
 import type { ReadingSession } from "../../types/story";
 import {
-  createNextReadingPageProgress,
-  createReadingPageProgress,
+  getVisitedReadingParts,
+  selectReadingPage,
   getReadingPageProgress,
-  loadReadingSession,
   saveReadingSession,
 } from "../../utils/readingSession";
+
+import StoryPlayerControls from "../../components/StoryPlayerControls/storyPlayerControls";
+import { initializeReadingSession } from "../../utils/readingFlow";
+import { StoryAudioPlayer, type PlaybackStatus } from "../../utils/storyAudioPlayer";
 
 type StoryReadingLocationState = {
   startNewSession?: boolean;
   advanceToNextPart?: boolean;
+  fromPartOrderNum?: number;
   childId?: number;
   storyTitle?: string;
   selectedLevel?: number;
@@ -61,161 +62,60 @@ function StoryReadingPage() {
   const shouldAdvancePart = locationState?.advanceToNextPart === true;
   const requestedLevel = locationState?.selectedLevel;
 
-  const initializationStarted = useRef(false);
+  const sessionRef = useRef<ReadingSession | null>(null);
+  const leavingRef = useRef(false);
   const focusInteractionTriggered = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerRef = useRef<StoryAudioPlayer | null>(null);
+  const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>("loading");
+  const [playbackRevision, setPlaybackRevision] = useState(0);
+  const [focusReady, setFocusReady] = useState(false);
   // 나레이션 재생 중에는 카메라를 잠시 놓아야 해서 바깥에서도 접근할 수 있게 둔다.
   const focusMonitorRef = useRef<BrowserFocusMonitor | null>(null);
   const cameraResumeTimerRef = useRef<number | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [readingSession, setReadingSession] = useState<ReadingSession | null>(
-    () => (shouldAdvancePart ? loadReadingSession() : null),
+    null,
   );
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (initializationStarted.current) {
-      return;
-    }
-
-    initializationStarted.current = true;
-
-    const initializeReading = async () => {
+    let disposed = false;
+    const initialize = async () => {
       setIsLoading(true);
+      setFocusReady(false);
       setErrorMessage("");
-
       try {
-        if (!Number.isInteger(originalStoryId) || originalStoryId <= 0) {
-          throw new Error("읽을 동화 정보가 없습니다.");
-        }
-
-        const storedSession = loadReadingSession();
-
-        if (shouldAdvancePart) {
-          if (
-            !storedSession ||
-            storedSession.originalStoryId !== originalStoryId
-          ) {
-            throw new Error("진행 중인 독서 기록을 찾을 수 없습니다.");
-          }
-
-          const nextPart = await getNextReadingPart(
-            storedSession.readingHistoryId,
-            requestedLevel ?? storedSession.selectedLevel,
-          );
-          const storyDetail = await getStoryDetail(
-            originalStoryId,
-            nextPart.level,
-          );
-          const nextSession: ReadingSession = {
-            ...storedSession,
-            selectedLevel: nextPart.level,
-            currentPart: {
-              type: nextPart.partType,
-              orderNum: nextPart.partOrderNum,
-              pages: nextPart.pages,
-            },
-            currentPageIndex: 0,
-            pageProgress: createNextReadingPageProgress(
-              storedSession,
-              storyDetail.parts,
-              nextPart.partOrderNum,
-            ),
-          };
-
-          saveReadingSession(nextSession);
-          setReadingSession(nextSession);
-          navigate(`/stories/read?originalStoryId=${originalStoryId}`, {
-            replace: true,
-            state: { storyTitle: nextSession.storyTitle },
-          });
-          return;
-        }
-
-        if (
-          !shouldStartNewSession &&
-          storedSession?.originalStoryId === originalStoryId
-        ) {
-          if (storedSession.pageProgress) {
-            setReadingSession(storedSession);
-            return;
-          }
-
-          const storyDetail = await getStoryDetail(
-            originalStoryId,
-            storedSession.selectedLevel,
-          );
-          const restoredSession: ReadingSession = {
-            ...storedSession,
-            pageProgress: createReadingPageProgress(
-              storyDetail.parts,
-              storedSession.currentPart.orderNum,
-              storedSession.currentPageIndex,
-            ),
-          };
-          saveReadingSession(restoredSession);
-          setReadingSession(restoredSession);
-          return;
-        }
-
-        if (!Number.isInteger(childId) || childId <= 0) {
-          throw new Error("동화를 읽을 아이를 먼저 선택해 주세요.");
-        }
-
-        const readingStart = await startReading(childId, originalStoryId);
-        const storyDetail = await getStoryDetail(
-          originalStoryId,
-          readingStart.level,
-        );
-        const newSession: ReadingSession = {
-          readingHistoryId: readingStart.readingHistoryId,
-          originalStoryId,
-          storyTitle,
-          selectedLevel: readingStart.level,
-          currentPart: {
-            type: readingStart.partType,
-            orderNum: readingStart.partOrderNum,
-            pages: readingStart.pages,
-          },
-          currentPageIndex: 0,
-          pageProgress: createReadingPageProgress(
-            storyDetail.parts,
-            readingStart.partOrderNum,
-            0,
-          ),
-        };
-
-        saveReadingSession(newSession);
-        setReadingSession(newSession);
-        navigate(`/stories/read?originalStoryId=${originalStoryId}`, {
-          replace: true,
-          state: { storyTitle: newSession.storyTitle },
+        const session = await initializeReadingSession({
+          key: location.key, originalStoryId, childId, storyTitle,
+          startNewSession: shouldStartNewSession,
+          advanceToNextPart: shouldAdvancePart,
+          fromPartOrderNum: locationState?.fromPartOrderNum,
+          selectedLevel: requestedLevel,
         });
+        if (disposed) return;
+        sessionRef.current = session;
+        setReadingSession(session);
+        if (shouldStartNewSession || shouldAdvancePart) {
+          navigate(`/stories/read?originalStoryId=${originalStoryId}`, {
+            replace: true, state: { storyTitle: session.storyTitle },
+          });
+        }
       } catch (error) {
-        console.error("동화 읽기 초기화 오류:", error);
-        setErrorMessage(getErrorMessage(error));
+        if (!disposed) setErrorMessage(getErrorMessage(error));
       } finally {
-        setIsLoading(false);
+        if (!disposed) setIsLoading(false);
       }
     };
-
-    void initializeReading();
-  }, [
-    childId,
-    navigate,
-    originalStoryId,
-    requestedLevel,
-    retryCount,
-    shouldAdvancePart,
-    shouldStartNewSession,
-    storyTitle,
-  ]);
+    void initialize();
+    return () => { disposed = true; };
+  }, [childId, location.key, locationState?.fromPartOrderNum, navigate, originalStoryId,
+    requestedLevel, retryCount, shouldAdvancePart, shouldStartNewSession, storyTitle]);
 
   const currentPart = readingSession?.currentPart;
-  const pages = currentPart?.pages ?? [];
+  const pages = currentPart?.pages;
   const currentPageIndex = readingSession?.currentPageIndex ?? 0;
-  const currentPage = pages[currentPageIndex];
+  const currentPage = pages?.[currentPageIndex];
   const pageProgress = readingSession
     ? getReadingPageProgress(readingSession)
     : { currentPage: 1, totalPages: 1 };
@@ -228,7 +128,7 @@ function StoryReadingPage() {
   // 다음 페이지 이미지를 미리 받아두어 페이지 전환 시 바로 표시되도록 합니다.
   useEffect(() => {
     pages
-      .slice(currentPageIndex + 1, currentPageIndex + 3)
+      ?.slice(currentPageIndex + 1, currentPageIndex + 3)
       .forEach((page) => {
         if (!page.imageUrl) {
           return;
@@ -244,28 +144,14 @@ function StoryReadingPage() {
       window.clearTimeout(cameraResumeTimerRef.current);
       cameraResumeTimerRef.current = null;
     }
-    void focusMonitorRef.current?.resume();
+    if (!focusInteractionTriggered.current) {
+      void focusMonitorRef.current?.resume().catch((error) => console.warn("카메라 재개 실패:", error));
+    }
   }, []);
 
   const stopAudio = useCallback(() => {
-    const audio = audioRef.current;
-
-    if (!audio) {
-      resumeCamera();
-      return;
-    }
-
-    audio.pause();
-    audio.removeAttribute("src");
-    audio.load();
-    audioRef.current = null;
-    // 나레이션이 끝났으니 집중도 감지(카메라·YOLO)를 다시 켠다.
-    resumeCamera();
-  }, [resumeCamera]);
-
-  useEffect(() => {
-    return stopAudio;
-  }, [currentPage?.audioUrl, currentPage?.pageId, stopAudio]);
+    playerRef.current?.stop();
+  }, []);
 
   useEffect(() => {
     if (!readingSession?.readingHistoryId || isLoading || errorMessage) return;
@@ -298,6 +184,7 @@ function StoryReadingPage() {
       }
 
       focusInteractionTriggered.current = true;
+      stopAudio();
       window.speechSynthesis?.cancel();
       // 상호작용 화면은 마이크를 잡는다. 파이에서는 카메라를 먼저 완전히 놓아주지
       // 않으면 둘 다 물려서 죽으므로, 이동 전에 감지를 끊는다.
@@ -313,14 +200,15 @@ function StoryReadingPage() {
 
     const unsubscribe = subscribeFocusSignals(handleFocusSignal);
     void getRealtimeSession()
-      .then((session) => {
+      .then(async (session) => {
         if (!disposed && session.focus?.source !== "camera") {
-          return focusMonitor.start();
+          await focusMonitor.start();
         }
       })
       .catch((error) => {
         console.warn("집중도 감지 서버에 연결하지 못했습니다:", error);
-      });
+      })
+      .finally(() => { if (!disposed) setFocusReady(true); });
 
     return () => {
       disposed = true;
@@ -328,131 +216,81 @@ function StoryReadingPage() {
       focusMonitor.stop();
       if (focusMonitorRef.current === focusMonitor) focusMonitorRef.current = null;
     };
-  }, [errorMessage, isLoading, navigate, readingSession?.readingHistoryId]);
+  }, [errorMessage, isLoading, navigate, readingSession?.readingHistoryId, stopAudio]);
 
-  const moveToPage = (pageIndex: number) => {
-    setReadingSession((currentSession) => {
-      if (!currentSession) {
-        return currentSession;
-      }
-
-      const nextSession = {
-        ...currentSession,
-        currentPageIndex: pageIndex,
-        pageProgress: {
-          ...getReadingPageProgress(currentSession),
-          currentPage:
-            getReadingPageProgress(currentSession).currentPage +
-            pageIndex -
-            currentSession.currentPageIndex,
-        },
-      };
-
-      saveReadingSession(nextSession);
-      return nextSession;
-    });
-  };
-
-  const handleRetry = () => {
-    initializationStarted.current = false;
-    setRetryCount((count) => count + 1);
-  };
-
-  const handlePrev = () => {
-    if (currentPageIndex > 0) {
-      moveToPage(currentPageIndex - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (!readingSession || !currentPart) {
-      return;
-    }
-
-    if (currentPageIndex < pages.length - 1) {
-      moveToPage(currentPageIndex + 1);
-      return;
-    }
-
-    const quizParams = new URLSearchParams({
-      originalStoryId: String(readingSession.originalStoryId),
-      partType: currentPart.type,
-    });
-
-    navigate(`/stories/quiz?${quizParams.toString()}`, {
-      state: { startQuizIndex: 0 },
-    });
-  };
-
-  const handleAudio = () => {
-    const audioUrl = currentPage?.audioUrl?.trim();
-
-    if (!audioUrl) {
-      return;
-    }
-
+  const moveToPage = (pageNumber: number) => {
+    const session = sessionRef.current;
+    if (!session || leavingRef.current || focusInteractionTriggered.current) return;
     stopAudio();
-
-    // 파이 USB 는 웹캠 + 터치스크린을 동시에 감당하지 못해 과전류가 나고,
-    // 그러면 패널이 리셋되면서 HDMI 화면·소리가 함께 끊긴다.
-    // 나레이션이 나오는 동안에는 카메라와 YOLO 판정을 멈춘다.
-    focusMonitorRef.current?.pause();
-
-    const audio = new Audio(audioUrl);
-    audioRef.current = audio;
-    audio.onended = () => {
-      if (audioRef.current === audio) {
-        stopAudio();
-      }
-    };
-
-    // 오디오 장치가 열리고 안정되면 카메라를 다시 켠다.
-    // (나레이션이 끝날 때까지 기다리지 않으므로 그 사이에도 집중도 감지가 동작한다)
-    if (CAMERA_PAUSE_AFTER_AUDIO_START_MS > 0) {
-      audio.onplaying = () => {
-        if (audioRef.current !== audio) return;
-        cameraResumeTimerRef.current = window.setTimeout(() => {
-          cameraResumeTimerRef.current = null;
-          void focusMonitorRef.current?.resume();
-        }, CAMERA_PAUSE_AFTER_AUDIO_START_MS);
-      };
-    }
-
-    void audio.play().catch((error) => {
-      if (audioRef.current === audio) {
-        stopAudio();
-      }
-      console.warn("동화 음성을 재생하지 못했습니다.", error);
-    });
+    const next = selectReadingPage(session, pageNumber);
+    sessionRef.current = next;
+    saveReadingSession(next);
+    setReadingSession(next);
+    setPlaybackRevision((revision) => revision + 1);
   };
+
+  const handleRetry = () => setRetryCount((count) => count + 1);
+  const handlePrev = () => {
+    if (sessionRef.current) moveToPage(getReadingPageProgress(sessionRef.current).currentPage - 1);
+  };
+  const handleNext = () => {
+    const session = sessionRef.current;
+    if (!session || leavingRef.current || focusInteractionTriggered.current) return;
+    if (session.currentPageIndex < session.currentPart.pages.length - 1) {
+      moveToPage(getReadingPageProgress(session).currentPage + 1);
+      return;
+    }
+    const quiz = session.quizzesByPart?.[session.currentPart.orderNum];
+    if (quiz?.completed) {
+      const next = getVisitedReadingParts(session).find(({ part }) => part.orderNum === session.currentPart.orderNum + 1);
+      if (next) { moveToPage(next.startPage); return; }
+      const result = Object.values(quiz.results).find((answer) => answer.lastQuizOfPart);
+      if (result) {
+        leavingRef.current = true;
+        stopAudio();
+        navigate("/stories/result", { state: result });
+        return;
+      }
+    }
+    leavingRef.current = true;
+    stopAudio();
+    const quizParams = new URLSearchParams({
+      originalStoryId: String(session.originalStoryId), partType: session.currentPart.type,
+    });
+    navigate(`/stories/quiz?${quizParams.toString()}`, { state: { startQuizIndex: 0 } });
+  };
+
+  const onAudioEnded = useEffectEvent(handleNext);
+  useEffect(() => {
+    const player = new StoryAudioPlayer({
+      onStatus: setPlaybackStatus,
+      onEnded: () => onAudioEnded(),
+      onStart: () => {
+        if (cameraResumeTimerRef.current !== null) window.clearTimeout(cameraResumeTimerRef.current);
+        cameraResumeTimerRef.current = null;
+        focusMonitorRef.current?.pause();
+      },
+      onRelease: resumeCamera,
+      onPlaying: () => {
+        if (cameraResumeTimerRef.current !== null) window.clearTimeout(cameraResumeTimerRef.current);
+        if (CAMERA_PAUSE_AFTER_AUDIO_START_MS > 0) {
+          cameraResumeTimerRef.current = window.setTimeout(resumeCamera, CAMERA_PAUSE_AFTER_AUDIO_START_MS);
+        }
+      },
+    });
+    playerRef.current = player;
+    return () => { player.stop(); playerRef.current = null; };
+  }, [resumeCamera]);
+
+  useEffect(() => {
+    if (isLoading || errorMessage || !focusReady || !currentPage || focusInteractionTriggered.current) return;
+    playerRef.current?.setPage(currentPage.audioUrl);
+    return stopAudio;
+  }, [currentPage, playbackRevision, isLoading, errorMessage, focusReady, stopAudio]);
 
   return (
     <main className="story-reading-page">
       <Logo />
-
-      <div className="story-reading-page__progress">
-        {readingSession && (
-          <StoryProgressBar
-            currentStep={pageProgress.currentPage}
-            totalSteps={pageProgress.totalPages}
-          />
-        )}
-      </div>
-
-      <button
-        type="button"
-        className="story-reading-page__audio-button"
-        onClick={handleAudio}
-        disabled={!currentPage}
-      >
-        <img
-          src={audioIcon}
-          alt=""
-          aria-hidden="true"
-          className="story-reading-page__audio-icon"
-        />
-        음성 듣기
-      </button>
 
       {isLoading && (
         <p className="story-reading-page__status">동화를 불러오는 중...</p>
@@ -507,23 +345,26 @@ function StoryReadingPage() {
             </div>
           </section>
 
-          <div className="story-reading-page__actions">
-            <button
-              type="button"
-              className="story-reading-page__nav-button"
-              onClick={handlePrev}
-              disabled={currentPageIndex === 0}
-            >
-              &lt; 이전
-            </button>
-
-            <button
-              type="button"
-              className="story-reading-page__nav-button"
-              onClick={handleNext}
-            >
-              {currentPageIndex < pages.length - 1 ? "다음 >" : "퀴즈 풀기 >"}
-            </button>
+          <StoryPlayerControls
+            playing={playbackStatus === "playing" || playbackStatus === "loading"}
+            previousDisabled={pageProgress.currentPage <= getVisitedReadingParts(readingSession)[0].startPage}
+            onPrevious={handlePrev}
+            onToggle={() => playerRef.current?.toggle()}
+            onNext={handleNext}
+          />
+          <p className="story-reading-page__audio-status" role="status">
+            {playbackStatus === "blocked" && "재생 버튼을 누르면 동화를 이어서 들을 수 있어요."}
+            {playbackStatus === "error" && "음성을 불러오지 못했어요. 재생 버튼을 눌러 다시 시도해 주세요."}
+            {playbackStatus === "loading" && "음성을 준비하고 있어요…"}
+          </p>
+          <div className="story-progress-footer">
+            <StoryProgressBar
+              currentStep={pageProgress.currentPage}
+              totalSteps={pageProgress.totalPages}
+              maxAccessibleStep={Math.max(...getVisitedReadingParts(readingSession).map(({ part, startPage }) => startPage + part.pages.length - 1))}
+              onSeek={moveToPage}
+              onSeekStart={() => { stopAudio(); setPlaybackStatus("paused"); }}
+            />
           </div>
         </>
       )}

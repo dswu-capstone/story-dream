@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import "./storyResultPage.css";
@@ -13,22 +13,7 @@ import {
   loadReadingSession,
 } from "../../utils/readingSession";
 
-type StoryResultState = {
-  readingHistoryId: number;
-  originalStoryId: number;
-  storyTitle: string;
-  selectedLevel: number;
-  partType: string;
-  partOrderNum: number;
-  quizIndex: number;
-  totalQuizzes: number;
-  selectedAnswer: string;
-  isCorrect: boolean;
-  correctAnswer: string;
-  explanation: string;
-  lastQuizOfPart: boolean;
-  recommendedLevel: number | null;
-};
+import type { ReadingQuizResult } from "../../types/story";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error
@@ -39,8 +24,9 @@ function getErrorMessage(error: unknown) {
 function StoryResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const resultState = location.state as StoryResultState | null;
+  const resultState = location.state as ReadingQuizResult | null;
   const readingSession = loadReadingSession();
+  const pendingRef = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -93,6 +79,7 @@ function StoryResultPage() {
     navigate(`/stories/read?originalStoryId=${originalStoryId}`, {
       state: {
         advanceToNextPart: true,
+        fromPartOrderNum: partOrderNum,
         selectedLevel: nextLevel,
         storyTitle,
       },
@@ -100,10 +87,14 @@ function StoryResultPage() {
   };
 
   const handleNext = async () => {
-    if (isPending) {
+    if (pendingRef.current) {
       return;
     }
 
+    if (!readingSession || readingSession.readingHistoryId !== readingHistoryId) {
+      navigate("/stories/recommend", { replace: true });
+      return;
+    }
     setErrorMessage("");
 
     if (!lastQuizOfPart) {
@@ -124,6 +115,7 @@ function StoryResultPage() {
     }
 
     if (partOrderNum >= 3) {
+      pendingRef.current = true;
       setIsPending(true);
 
       try {
@@ -134,6 +126,7 @@ function StoryResultPage() {
         console.error("동화 읽기 종료 오류:", error);
         setErrorMessage(getErrorMessage(error));
       } finally {
+        pendingRef.current = false;
         setIsPending(false);
       }
 
@@ -152,6 +145,8 @@ function StoryResultPage() {
           storyTitle,
           selectedLevel,
           recommendedLevel,
+          fromPartOrderNum: partOrderNum,
+          readingHistoryId,
         },
       });
       return;
@@ -164,7 +159,7 @@ function StoryResultPage() {
     <main className="story-result-page">
       <Logo />
 
-      <div className="story-result-page__progress">
+      <div className="story-progress-footer">
         <StoryProgressBar
           currentStep={pageProgress.currentPage}
           totalSteps={pageProgress.totalPages}

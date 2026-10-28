@@ -6,12 +6,6 @@
   background: linear-gradient(180deg, #fcffef 0%, #fdfdeb 100%);
 }
 
-.story-quiz-page__progress {
-  display: flex;
-  justify-content: center;
-  margin-top: 14px;
-}
-
 .story-quiz-page__status {
   margin-top: 180px;
   color: var(--color-gray-dark);
