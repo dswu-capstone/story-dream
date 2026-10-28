@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyQuizPage.css";
@@ -9,12 +9,14 @@ import optionOneIcon from "../../assets/mdi_number-1-circle-outline.svg";
 import optionTwoIcon from "../../assets/mdi_number-2-circle-outline.svg";
 import Logo from "../../components/Logo/logo";
 import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar";
+import type { ReadingQuizResult } from "../../types/story";
 import type { Quiz } from "../../types/quiz";
 import {
   createReadingPageProgress,
   getReadingPageProgress,
   loadReadingSession,
   saveReadingSession,
+  recordReadingQuiz,
 } from "../../utils/readingSession";
 
 type StoryQuizLocationState = {
@@ -43,7 +45,10 @@ function StoryQuizPage() {
   const startQuizIndex = locationState?.startQuizIndex ?? 0;
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const currentQuizIndex = startQuizIndex;
+  const submitted = storedSession?.quizzesByPart?.[storedSession.currentPart.orderNum];
+  const firstUnanswered = quizzes.findIndex((quiz) => !submitted?.results[quiz.quizId]);
+  const currentQuizIndex = firstUnanswered >= 0 ? firstUnanswered : startQuizIndex;
+  const submittingRef = useRef(false);
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +69,16 @@ function StoryQuizPage() {
           throw new Error("진행 중인 독서 기록을 찾을 수 없습니다.");
         }
 
+        if (searchParams.get("partType") && searchParams.get("partType") !== storedSession.currentPart.type) {
+          navigate(`/stories/read?originalStoryId=${storedSession.originalStoryId}`, { replace: true });
+          return;
+        }
+        const completed = storedSession.quizzesByPart?.[storedSession.currentPart.orderNum];
+        if (completed?.completed) {
+          const result = Object.values(completed.results).find((answer) => answer.lastQuizOfPart);
+          navigate("/stories/result", { replace: true, state: result });
+          return;
+        }
         const [data, storyDetail] = await Promise.all([
           getQuizzes({ originalStoryId, partType }),
           storedSession.pageProgress
@@ -98,16 +113,25 @@ function StoryQuizPage() {
     };
 
     void loadQuizzes();
-  }, [originalStoryId, partType, storedSession]);
+  }, [navigate, originalStoryId, partType, searchParams, storedSession]);
 
   const currentQuiz = quizzes[currentQuizIndex];
   const isOxQuiz = currentQuiz?.type === "OX";
 
   const handleSubmit = async () => {
-    if (!currentQuiz || !selectedAnswer || !storedSession || isSubmitting) {
+    if (!currentQuiz || !selectedAnswer || !storedSession || submittingRef.current) {
       return;
     }
 
+    const activeSession = loadReadingSession();
+    if (activeSession?.readingHistoryId !== storedSession.readingHistoryId) return;
+    const existingResult = activeSession.quizzesByPart?.[storedSession.currentPart.orderNum]?.results[currentQuiz.quizId];
+    if (existingResult) {
+      navigate("/stories/result", { state: existingResult });
+      return;
+    }
+
+    submittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage("");
 
@@ -118,8 +142,7 @@ function StoryQuizPage() {
         selectedAnswer,
       });
 
-      navigate("/stories/result", {
-        state: {
+      const result: ReadingQuizResult = {
           readingHistoryId: storedSession.readingHistoryId,
           originalStoryId: storedSession.originalStoryId,
           storyTitle: storedSession.storyTitle,
@@ -134,12 +157,18 @@ function StoryQuizPage() {
           explanation: currentQuiz.explanation?.trim() ?? "",
           lastQuizOfPart: quizResult.lastQuizOfPart,
           recommendedLevel: quizResult.recommendedLevel,
-        },
-      });
+
+      };
+      const latest = loadReadingSession();
+      if (!latest || latest.readingHistoryId !== storedSession.readingHistoryId) return;
+      const updated = recordReadingQuiz(latest, currentQuiz.quizId, quizzes.map((quiz) => quiz.quizId), result);
+      saveReadingSession(updated);
+      navigate("/stories/result", { state: result });
     } catch (error) {
       console.error("퀴즈 제출 오류:", error);
       setErrorMessage(getErrorMessage(error));
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -148,7 +177,7 @@ function StoryQuizPage() {
     <main className="story-quiz-page">
       <Logo />
 
-      <div className="story-quiz-page__progress">
+      <div className="story-progress-footer">
         {pageProgress && (
           <StoryProgressBar
             currentStep={pageProgress.currentPage}

@@ -236,5 +236,9 @@ export async function submitQuiz({
 
   const result: QuizSubmitApiResponse = await response.json();
 
+  if (!result.success || !result.data) {
+    throw new Error(result.message ?? "퀴즈 답안을 제출하지 못했습니다.");
+  }
+
   return result.data;
 }

@@ -29,6 +29,7 @@ import StoryProgressBar from "../../components/StoryProgressBar/storyProgressBar
 import type { ReadingSession, StoryDetail, StoryPage } from "../../types/story";
 import {
   getReadingPageProgress,
+  getVisitedReadingParts,
   loadReadingSession,
 } from "../../utils/readingSession";
 
@@ -187,7 +188,12 @@ function buildSessionStoryContext(
     partOrderNum: currentPart.orderNum,
     currentPageNumber: currentPart.pages[safePageIndex]?.pageNum ?? safePageIndex + 1,
     totalParts: 3,
-    sentences: getPageSentences(currentPart.pages.slice(0, safePageIndex + 1)),
+    sentences: [
+      ...getVisitedReadingParts(readingSession)
+        .filter(({ part }) => part.orderNum < currentPart.orderNum)
+        .flatMap(({ part }) => getPageSentences(part.pages)),
+      ...getPageSentences(currentPart.pages.slice(0, safePageIndex + 1)),
+    ],
   };
 }
 
@@ -325,7 +331,9 @@ function RealtimeInteractionPage() {
       Number.isInteger(selectedChildId) && selectedChildId > 0
         ? getProfile(selectedChildId)
         : Promise.reject(new Error("선택된 아동 프로필이 없습니다."));
-    const storyRequest = storedReadingSession
+    const storyRequest = storedReadingSession?.visitedParts
+      ? Promise.resolve(null)
+      : storedReadingSession
       ? getStoryDetail(
           storedReadingSession.originalStoryId,
           storedReadingSession.selectedLevel,
@@ -342,7 +350,7 @@ function RealtimeInteractionPage() {
     let nextSnapshot = storedReadingSession
       ? buildSessionStoryContext(storedReadingSession)
       : null;
-    if (storyResult.status === "fulfilled" && storedReadingSession) {
+    if (storyResult.status === "fulfilled" && storyResult.value && storedReadingSession) {
       nextSnapshot = buildStoryContext(storyResult.value, storedReadingSession);
       setStorySnapshot(nextSnapshot);
       if (!contextParam && nextSnapshot.sentences.length > 0) {
@@ -832,7 +840,7 @@ function RealtimeInteractionPage() {
   return (
     <main className="realtime-interaction-page">
       <Logo />
-      <div className="realtime-interaction-page__progress">
+      <div className="story-progress-footer">
         <StoryProgressBar currentStep={currentStep} totalSteps={totalSteps} />
       </div>
 

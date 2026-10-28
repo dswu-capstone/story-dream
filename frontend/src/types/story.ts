@@ -52,8 +52,39 @@ export type ReadingSession = {
   selectedLevel: number;
   currentPart: StoryPart;
   currentPageIndex: number;
+  visitedParts?: VisitedReadingPart[];
+  partPageCounts?: Record<number, number>;
+  quizzesByPart?: Record<number, ReadingPartQuiz>;
   pageProgress?: {
     currentPage: number;
     totalPages: number;
   };
+};
+
+export type VisitedReadingPart = {
+  part: StoryPart;
+  level: number;
+  startPage: number;
+};
+
+export type ReadingQuizResult = {
+  readingHistoryId: number;
+  originalStoryId: number;
+  storyTitle: string;
+  selectedLevel: number;
+  partType: string;
+  partOrderNum: number;
+  quizIndex: number;
+  totalQuizzes: number;
+  selectedAnswer: string;
+  isCorrect: boolean;
+  correctAnswer: string;
+  explanation: string;
+  lastQuizOfPart: boolean;
+  recommendedLevel: number | null;
+};
+
+export type ReadingPartQuiz = {
+  completed: boolean;
+  results: Record<number, ReadingQuizResult>;
 };
