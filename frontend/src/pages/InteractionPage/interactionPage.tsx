@@ -16,6 +16,8 @@ type LevelAdjustState = {
   storyTitle: string;
   selectedLevel: number;
   recommendedLevel: number;
+  fromPartOrderNum?: number;
+  readingHistoryId?: number;
 };
 
 const levelAdjustContent = {
@@ -56,9 +58,11 @@ function InteractionPage() {
   }
 
   const continueReading = (selectedLevel: number) => {
+    if (adjustState.readingHistoryId && adjustState.readingHistoryId !== readingSession.readingHistoryId) return;
     navigate(`/stories/read?originalStoryId=${adjustState.originalStoryId}`, {
       state: {
         advanceToNextPart: true,
+        fromPartOrderNum: adjustState.fromPartOrderNum ?? readingSession.currentPart.orderNum,
         selectedLevel,
         storyTitle: adjustState.storyTitle,
       },
@@ -69,7 +73,7 @@ function InteractionPage() {
     <main className="interaction-page">
       <Logo />
 
-      <div className="interaction-page__progress">
+      <div className="story-progress-footer">
         <StoryProgressBar
           currentStep={pageProgress.currentPage}
           totalSteps={pageProgress.totalPages}

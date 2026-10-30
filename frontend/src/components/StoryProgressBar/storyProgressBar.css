@@ -1,23 +1,15 @@
-.story-progress-bar {
-  width: 360px;
-}
-
-.story-progress-bar__track {
-  position: relative;
-  width: 100%;
-  height: 6px;
-  background: #d8d8d8;
-}
-
-.story-progress-bar__fill {
-  height: 100%;
-  background: var(--color-blue);
-}
-
-.story-progress-bar__flag {
+.story-progress-footer {
   position: absolute;
-  top: -28px;
-  width: 26px;
-  height: 34px;
-  transform: translateX(-12%);
+  inset: auto 7% 0;
 }
+.story-progress-bar {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+.story-progress-bar--interactive { cursor: pointer; touch-action: none; user-select: none; }
+.story-progress-bar:focus-visible { outline: 3px solid var(--color-blue); outline-offset: -3px; border-radius: 12px; }
+.story-progress-bar__track { position: relative; width: 100%; height: 13px; border-radius: 999px; background: var(--color-gray); }
+.story-progress-bar__fill { height: 100%; border-radius: inherit; background: var(--color-blue); }
+.story-progress-bar__handle { position: absolute; top: 50%; width: 20px; height: 20px; border: 2px solid var(--color-background); border-radius: 50%; background: var(--color-blue); transform: translate(-50%, -50%); }

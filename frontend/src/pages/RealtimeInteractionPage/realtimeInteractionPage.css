@@ -17,17 +17,6 @@
   cursor: pointer;
 }
 
-.realtime-interaction-page__progress {
-  position: absolute;
-  top: 49px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.realtime-interaction-page__progress .story-progress-bar {
-  width: min(41vw, 420px);
-}
-
 .realtime-interaction-page__stage {
   position: absolute;
   top: 116px;
@@ -135,7 +124,7 @@
 
 .realtime-interaction-page__controls {
   position: absolute;
-  bottom: 22px;
+  bottom: 48px;
   left: 50%;
   display: flex;
   width: min(82vw, 780px);
@@ -384,7 +373,7 @@
   }
 
   .realtime-interaction-page__controls {
-    bottom: 12px;
+    bottom: 48px;
   }
 }
 

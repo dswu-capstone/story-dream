@@ -6,12 +6,6 @@
   background: linear-gradient(180deg, #fcffef 0%, #fdfdeb 100%);
 }
 
-.story-result-page__progress {
-  display: flex;
-  justify-content: center;
-  margin-top: 14px;
-}
-
 .story-result-page__counter {
   position: absolute;
   top: 34px;

@@ -41,3 +41,4 @@
 {"timestamp":"2026-09-19T16:51:41.036Z","bookId":null,"question":"민서야, 엄마 아빠의 직업은 작은 대학의 교수님이니?","answer":"몰라봐.","correct":false,"emotion":"sad","feedback":"민서야, 이야기 속에서 엄마 아빠는 서울에 있는 작은 대학의 교수님이라고 나와 있었어요. 우리 동화에 나온 내용을 차분히 떠올리면서 계속 집중해 보자!","source":"stories-interaction-page"}
 {"timestamp":"2026-09-19T16:52:15.802Z","bookId":null,"question":"민서야, 엄마 아빠는 서울에 있는 작은 대학의 교수님이니?","answer":"민서가 누구야? 난 김공주인데","correct":false,"emotion":"surprise","feedback":"이야기에서는 엄마 아빠가 서울에 있는 작은 대학의 교수님이라고 나와 있어요. 그리고 '우리 민서'라고 불리는 아이가 등장하니, 그 내용을 떠올리면서 다시 이야기 속에 집중해 보자!","source":"stories-interaction-page"}
 >>>>>>> 00a232c9a1475866ee469b741a4765fcc611beef
+{"timestamp":"2026-10-28T19:12:26.609Z","bookId":null,"question":"김공주, 앨리스는 그림이 없는 책을 보고 '그림 없는 책이 무슨 책이지?","answer":"몰라","correct":true,"emotion":"happy","feedback":"좋아, 앨리스도 언니 옆에서 그림 없는 책을 보고 ‘그림 없는 책이 무슨 책이지?’ 하고 궁금해했어. 우리도 지금 나온 이야기만 생각하면서, 다음에 앨리스가 어떻게 느낄지 계속 집중해 보자!","source":"stories-interaction-page"}

@@ -5,7 +5,6 @@ import backgroundHills from "../../assets/background_hills.svg";
 import character from "../../assets/character.svg";
 import readingBookIcon from "../../assets/reading_book.svg";
 import profileIcon from "../../assets/profile.svg";
-import speechBubble from "../../assets/start_page_speech_bubble.svg";
 import Logo from "../../components/Logo/logo";
 
 import { navigateWithAuth } from "../../utils/auth";
@@ -41,17 +40,17 @@ function StartPage() {
         </button>
       </section>
 
-      <div className="speech-container">
-        <img src={speechBubble} alt="" className="speech-bubble" />
-
-        <div className="speech-text">
-          <p>반가워!</p>
-          <p>오늘은 어떤</p>
-          <p>동화를 읽어볼까?</p>
+      <div className="start-companion">
+        <div className="speech-container">
+          <div className="speech-text">
+            <p>반가워!</p>
+            <p>오늘은 어떤</p>
+            <p>동화를 읽어볼까?</p>
+          </div>
         </div>
-      </div>
 
-      <img src={character} alt="StoryDream 캐릭터" className="character" />
+        <img src={character} alt="StoryDream 캐릭터" className="character" />
+      </div>
       <img src={backgroundHills} alt="" className="background-hills" />
     </main>
   );

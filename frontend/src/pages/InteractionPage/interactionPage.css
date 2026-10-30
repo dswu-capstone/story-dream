@@ -6,12 +6,6 @@
   padding: 26px 32px 32px;
 }
 
-.interaction-page__progress {
-  display: flex;
-  justify-content: center;
-  margin-top: 14px;
-}
-
 .interaction-page__panel {
   position: relative;
   width: 820px;

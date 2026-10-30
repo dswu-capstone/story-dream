@@ -61,3 +61,8 @@ body {
 
   background-color: var(--color-background);
 }
+/* Allow content growth on the start route only. */
+#root:has(> .start-page) {
+  height: auto;
+  min-height: 100%;
+}
