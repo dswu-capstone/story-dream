@@ -4,3 +4,14 @@ build
 .git
 *.iml
 .env
+**/.env
+**/.env.*
+**/*.env
+**/*.pem
+**/*.key
+**/credentials.json
+**/service-account*.json
+**/.aws
+**/.git
+**/__pycache__
+**/.venv

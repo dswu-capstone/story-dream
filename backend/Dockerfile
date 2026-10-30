@@ -6,11 +6,15 @@ FROM eclipse-temurin:21-jdk AS builder
 # 컨테이너 내부 작업 폴더
 WORKDIR /app
 
-# 프로젝트 전체를 컨테이너 안의 /app 폴더로 복사
-COPY . .
+# 의존성 레이어는 소스 변경과 분리해 캐시 재사용
+COPY gradlew build.gradle settings.gradle ./
+COPY gradle ./gradle
 
 # ./gradlew 명령어를 실행할 수 있도록 gradlew 파일에 실행 권한 부여
 RUN chmod +x gradlew
+RUN ./gradlew dependencies --configuration runtimeClasspath --no-daemon
+
+COPY src ./src
 
 # 컴파일, JAR 생성
 RUN ./gradlew clean bootJar --no-daemon
@@ -19,6 +23,10 @@ RUN ./gradlew clean bootJar --no-daemon
 
 # 실행만 하면 되므로 JDK가 아닌 JRE 사용
 FROM eclipse-temurin:21-jre
+
+# 컨테이너 내부 HTTP 헬스체크에 사용
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # 컨테이너 내부 작업 폴더
 WORKDIR /app
