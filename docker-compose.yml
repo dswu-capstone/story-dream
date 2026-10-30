@@ -1,36 +1,68 @@
+
 name: storydream
 
 services:
+    # FastAPI AI 서버
     ai-server:
-        build:
-            context: ./AI/ai-server
-            dockerfile: Dockerfile
-        image: storydream-ai:latest
+        image: ${IMAGE_PREFIX:?IMAGE_PREFIX is required}/ai-server:${IMAGE_TAG:?IMAGE_TAG is required}
         container_name: storydream-ai
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+        # AI 서버 환경변수 파일
         env_file:
-            - ./AI/ai-server/.env
-        expose: # 포트를 Compose 내부에만 공개
+            - ./ai-server.env
+
+        # Docker Compose 내부 통신용 포트
+        expose:
             - "8000"
+
+        # AI 서버 정상 동작 여부 확인
         healthcheck:
-            test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
+            test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
             interval: 30s
             timeout: 5s
             retries: 5
+
         restart: unless-stopped
 
+    # Spring Boot 백엔드 서버
     backend:
-        build:
-            context: ./backend
-            dockerfile: Dockerfile
-        image: storydream-backend:latest # 빌드한 이미지 이름 지정(storydream-backend:latest)
+        image: ${IMAGE_PREFIX:?IMAGE_PREFIX is required}/backend:${IMAGE_TAG:?IMAGE_TAG is required}
         container_name: backend
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+        # 컨테이너 내부에서 백엔드와 DB 연결 상태 확인
+        healthcheck:
+            test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "4", "http://localhost:8080/actuator/health"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 60s
+
+        # EC2의 8080 포트를 백엔드 컨테이너에 연결
         ports:
             - "8080:8080"
+
+        # 백엔드 환경변수 파일
         env_file:
-            - ./backend/.env
+            - ./backend.env
+
+        # application.yaml에서 사용할 AI 서버 주소 주입
         environment:
-            AI_SERVER_BASE_URL: http://ai-server:8000 # application.yaml에 환경변수 값 주입
+            AI_SERVER_BASE_URL: http://ai-server:8000
+
+        # AI 서버가 정상 동작한 후 백엔드 실행
         depends_on:
             ai-server:
                 condition: service_healthy
+
+        # 컨테이너 종료 시 자동 재시작
         restart: unless-stopped

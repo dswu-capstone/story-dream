@@ -1,5 +1,6 @@
 name: Deploy to EC2
 
+# main 브랜치 푸시 또는 수동 실행
 on:
   push:
     branches: [main]
@@ -7,36 +8,91 @@ on:
 
 permissions: {}
 
+# 중복 배포 방지
 concurrency:
   group: storydream-ec2-production
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # Docker 이미지 빌드 및 GHCR 업로드
+  build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            context: ./backend
+          - service: ai-server
+            context: ./AI/ai-server
     steps:
-      - name: Build and deploy on EC2
+      - uses: actions/checkout@v4
+
+      # 서비스별 이미지 이름 및 커밋 SHA 태그 설정
+      - name: Set image name
+        shell: bash
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.service }}:${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      # GHCR 로그인
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 이미지 빌드 및 업로드
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ env.IMAGE }}
+          # 서비스별 캐시를 분리해 서로 덮어쓰지 않도록 설정
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Verify published image
+        run: docker buildx imagetools inspect "$IMAGE"
+
+  # EC2에 SSH 접속하여 배포
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy published images on EC2
         shell: bash
         env:
+          # GitHub Secrets에서 EC2 접속 정보 가져오기
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
           EC2_PROJECT_PATH: ${{ secrets.EC2_PROJECT_PATH }}
           EC2_SSH_PORT: ${{ vars.EC2_SSH_PORT || '22' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           for name in EC2_HOST EC2_USER EC2_SSH_KEY EC2_KNOWN_HOSTS EC2_PROJECT_PATH; do
-            if [[ -z "${!name}" ]]; then
-              echo "::error::Missing required secret: $name"
-              exit 1
-            fi
+            [[ -n "${!name}" ]] || { echo "::error::Missing required secret: $name"; exit 1; }
           done
-          [[ "$EC2_SSH_PORT" =~ ^[0-9]+$ ]] || { echo 'Invalid SSH port'; exit 1; }
+          [[ "$EC2_SSH_PORT" =~ ^[0-9]+$ ]] || exit 1
           [[ "$EC2_HOST" != -* && "$EC2_USER" != -* ]] || exit 1
 
+          # SSH 인증 파일 준비
           ssh_dir=$(mktemp -d)
           trap 'rm -rf -- "$ssh_dir"' EXIT
           chmod 700 "$ssh_dir"
@@ -44,67 +100,113 @@ jobs:
           printf '%s\n' "$EC2_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
           chmod 600 "$ssh_dir/key" "$ssh_dir/known_hosts"
 
-          # Base64 keeps the path out of remote shell quoting/interpolation.
-          project_path=$(printf '%s' "$EC2_PROJECT_PATH" | base64 -w 0)
-          ssh -T -i "$ssh_dir/key" -p "$EC2_SSH_PORT" \
-            -o BatchMode=yes -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
-            -o ConnectTimeout=15 -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=6 \
-            "$EC2_USER@$EC2_HOST" "bash -s -- '$project_path'" <<'REMOTE'
+          # EC2에 배포 정보 및 Compose 파일 전달
+          {
+            printf 'project_path=$(printf %%s %q | base64 --decode)\n' "$(printf %s "$EC2_PROJECT_PATH" | base64 -w 0)"
+            printf 'export IMAGE_PREFIX=%q IMAGE_TAG=%q\n' "ghcr.io/${GITHUB_REPOSITORY,,}" "$GITHUB_SHA"
+            printf 'ghcr_user=%q\n' "$GHCR_USER"
+            printf 'ghcr_token=%q\n' "$GHCR_TOKEN"
+            printf 'compose_payload=%q\n' "$(base64 -w 0 docker-compose.yml)"
+            cat <<'REMOTE'
+
+          # EC2에서 실행
           set -euo pipefail
-          export GIT_TERMINAL_PROMPT=0
-          project_path=$(printf '%s' "$1" | base64 --decode)
           [[ "$project_path" = /* ]] || { echo 'Project path must be absolute'; exit 1; }
           cd -- "$project_path"
-          test -f docker-compose.yml
-          command -v flock >/dev/null
-          exec 9>"$(git rev-parse --git-path storydream-deploy.lock)"
-          flock -n 9 || { echo 'Another EC2 deployment is running'; exit 1; }
 
-          [[ "$(git branch --show-current)" == main ]] || {
-            echo 'EC2 checkout must be on main'; exit 1;
-          }
-          [[ -z "$(git status --porcelain)" ]] || {
-            echo 'EC2 checkout has local changes; deployment stopped'; exit 1;
-          }
+          # 동시 배포 방지 및 환경변수 파일 확인
+          exec 9>.storydream-deploy.lock
+          flock -n 9 || { echo 'Another deployment is running'; exit 1; }
+          test -f backend.env
+          test -f ai-server.env
 
-          docker compose version
-          # Reclaim space before fetching/building; container-referenced images stay.
-          echo 'Docker disk usage before cleanup'
-          docker system df
-          docker builder prune -af
-          docker image prune -af
-          echo 'Docker disk usage after cleanup'
-          docker system df
+          # GHCR 임시 로그인
+          export DOCKER_CONFIG
+          DOCKER_CONFIG=$(mktemp -d)
+          compose_file=$(mktemp "$project_path/.compose-deploy.XXXXXX.yml")
+          trap 'rm -rf -- "$DOCKER_CONFIG"; rm -f -- "$compose_file"' EXIT
+          printf '%s' "$ghcr_token" | docker login ghcr.io --username "$ghcr_user" --password-stdin
+          unset ghcr_token
 
-          # Always deploy the latest main, including when an older run is retried.
-          git fetch origin main
-          git merge --ff-only origin/main
-          [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || {
-            echo 'EC2 main contains local commits; deployment stopped'; exit 1;
-          }
-          test -f backend/.env
-          test -f AI/ai-server/.env
-          docker compose config --quiet
-          echo "Deploying commit $(git rev-parse HEAD)"
+          # Compose 파일 복원 및 검증
+          printf '%s' "$compose_payload" | base64 --decode > "$compose_file"
+          docker compose -f "$compose_file" config --quiet
 
-          # Keep existing containers running until both images finish building.
-          docker compose build backend
-          # Release intermediate build cache before building the next service.
-          # Do not prune images here: the new backend image is not in use yet.
-          docker builder prune -af
-          docker compose build ai-server
-          if ! docker compose up -d --no-build --wait --wait-timeout 180 ai-server backend; then
-            docker compose ps --all
-            echo 'Deployment failed. Check container logs on EC2.'
+          # 이전 정상 설정과 로컬 이미지를 배포 전에 확인
+          previous=false
+          if [[ -f .deployment.env && -f docker-compose.yml ]]; then
+            previous=true
+            old_compose=(env -u IMAGE_PREFIX -u IMAGE_TAG docker compose --env-file .deployment.env -f docker-compose.yml)
+            "${old_compose[@]}" config --quiet
+            old_images=$("${old_compose[@]}" config --images)
+            while IFS= read -r image; do
+              docker image inspect "$image" > /dev/null
+            done <<< "$old_images"
+          elif [[ -f .deployment.env ]]; then
+            echo 'Previous deployment metadata is incomplete'; exit 1
+          fi
+
+          # 이미지 다운로드 및 컨테이너 실행
+          docker compose -f "$compose_file" pull
+          if ! docker compose -f "$compose_file" up -d --no-build --wait --wait-timeout 180; then
+            echo 'Deployment failed; restoring previous deployment'
+            if [[ "$previous" == true ]]; then
+              if "${old_compose[@]}" up -d --no-build --pull never --wait --wait-timeout 180; then
+                echo 'Rollback succeeded'
+              else
+                echo '::error::Rollback failed; manual recovery required'
+              fi
+            else
+              echo '::error::No previous successful deployment is available for rollback'
+            fi
             exit 1
           fi
-          docker compose ps
-          # Only prune old images after the new containers have started successfully.
-          docker builder prune -af
-          docker image prune -af
-          echo 'Docker disk usage after deployment cleanup'
-          docker system df
+
+          # 새 버전이 정상일 때만 이전 버전을 보관하고 정상 배포 정보 갱신
+          if [[ "$previous" == true ]]; then
+            cp -- .deployment.env .deployment.previous.env
+            cp -- docker-compose.yml docker-compose.previous.yml
+          fi
+          printf 'IMAGE_PREFIX=%s\nIMAGE_TAG=%s\n' "$IMAGE_PREFIX" "$IMAGE_TAG" > .deployment.env
+          mv -- "$compose_file" docker-compose.yml
+
+          # 컨테이너 상태 확인
+          docker compose --env-file .deployment.env ps
+
+          # 현재·직전 이미지 ID를 보호하고 이 프로젝트의 7일 이상 된 이미지만 정리
+          cleanup_images() {
+            local refs image id created cutoff protected
+            refs=$(docker compose -f docker-compose.yml config --images) || return 1
+            if [[ -f .deployment.previous.env && -f docker-compose.previous.yml ]]; then
+              refs+=$'\n'$(env -u IMAGE_PREFIX -u IMAGE_TAG docker compose --env-file .deployment.previous.env -f docker-compose.previous.yml config --images) || return 1
+            fi
+            protected=$(while IFS= read -r image; do
+              docker image inspect --format '{{.Id}}' "$image" || exit 1
+            done <<< "$refs") || return 1
+            local containers container
+            containers=$(docker ps -aq) || return 1
+            for container in $containers; do
+              protected+=$'\n'$(docker inspect --format '{{.Image}}' "$container") || return 1
+            done
+            cutoff=$(date -d '7 days ago' +%s)
+            local candidates
+            candidates=$(docker image ls --format '{{.Repository}}:{{.Tag}}' --filter "reference=$IMAGE_PREFIX/backend:*" --filter "reference=$IMAGE_PREFIX/ai-server:*") || return 1
+            while IFS= read -r image; do
+              [[ -n "$image" && "$image" != *':<none>' ]] || continue
+              id=$(docker image inspect --format '{{.Id}}' "$image") || return 1
+              grep -Fxq "$id" <<< "$protected" && continue
+              created=$(docker image inspect --format '{{.Created}}' "$image") || return 1
+              [[ $(date -d "$created" +%s) -lt "$cutoff" ]] || continue
+              # 강제 삭제하지 않아 컨테이너가 사용하는 이미지는 Docker가 보호
+              docker image rm "$image" || return 1
+            done <<< "$candidates"
+          }
+          cleanup_images || echo '::warning::Image cleanup skipped or incomplete'
           REMOTE
+
+          # SSH로 EC2에서 배포 명령 실행
+          } | ssh -T -i "$ssh_dir/key" -p "$EC2_SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=6 \
+            "$EC2_USER@$EC2_HOST" 'bash -s'
