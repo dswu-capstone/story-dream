@@ -44,7 +44,7 @@ ai:
 
 aws:
   s3:
-    bucket: project4-37-sydney-s3-231629457672-ap-southeast-2-an
+    bucket: storydream-bucket
 
 oauth:
   google:
