@@ -1,3 +1,4 @@
+import { getProfiles } from "../../api/profile";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -78,7 +79,7 @@ function LoginPage() {
 
       window.confirm("로그인 성공");
 
-      navigate(redirectTo, { replace: true });
+      const profiles = await getProfiles(); navigate(profiles.length === 0 ? "/guardian/children/welcome" : redirectTo, { replace: true });
     } catch {
       setErrorMessage("서버와 연결할 수 없습니다.");
     }

@@ -1,3 +1,4 @@
+import { getProfiles } from "../../api/profile";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -47,7 +48,7 @@ function OAuthCallbackPage({ provider }: OAuthCallbackPageProps) {
       localStorage.setItem("accessToken", loginResult.accessToken);
       localStorage.setItem("tokenType", loginResult.tokenType);
 
-      navigate(redirectTo, { replace: true });
+      const profiles = await getProfiles(); navigate(profiles.length === 0 ? "/guardian/children/welcome" : redirectTo, { replace: true });
     };
 
     void completeLogin().catch((error: unknown) => {

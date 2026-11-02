@@ -155,3 +155,35 @@
     height: 160px;
   }
 }
+.story-recommend-page--public {
+  position: relative;
+  min-height: 100vh;
+  height: auto;
+  padding-top: 110px;
+}
+.story-recommend-page__login {
+  position: absolute;
+  top: 22px;
+  right: 4%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: clamp(18px, 2vw, 32px);
+  cursor: pointer;
+}
+.story-recommend-page__login img { width: 48px; height: 48px; }
+.story-recommend-page--public .story-recommend-page__title { font-size: clamp(26px, 3.3vw, 52px); }
+.story-recommend-page--public .story-recommend-page__carousel { width: 100%; }
+.story-recommend-page--public .story-recommend-page__list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(12px, 2.5vw, 40px); }
+.story-recommend-page--public .story-recommend-page__card { width: 100%; align-self: stretch; }
+.story-recommend-page--public .story-recommend-page__thumbnail { height: auto; aspect-ratio: 1; }
+.story-recommend-page--public .story-recommend-page__card-body { min-height: 100px; gap: 18px; }
+.story-recommend-page--public .story-recommend-page__card-title { font-size: clamp(15px, 1.5vw, 24px); }
+.story-recommend-page--public .story-recommend-page__pagination { margin: 64px 0 30px; }
+@media (max-width: 600px) {
+  .story-recommend-page--public .story-recommend-page__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .story-recommend-page--public .logo { width: 120px; }
+}

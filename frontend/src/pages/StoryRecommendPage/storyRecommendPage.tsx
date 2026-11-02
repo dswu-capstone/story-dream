@@ -3,7 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyRecommendPage.css";
 
-import { getRecommendedStories } from "../../api/story";
+import { getRecommendedStories, getPublicStories } from "../../api/story";
+import fallbackCover from "../../assets/character.svg";
+import profileIcon from "../../assets/profile.svg";
 import ArrowButton from "../../components/ArrowButton/arrowButton";
 import Logo from "../../components/Logo/logo";
 import type {
@@ -19,7 +21,7 @@ const nextButtonLabel = "다음 추천 동화 보기";
 const paginationLabel = "추천 동화 페이지 위치";
 const emptyMessage = "추천할 동화가 아직 없어요.";
 
-function StoryRecommendPage() {
+function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const childIdParam = searchParams.get("childId");
@@ -42,8 +44,9 @@ function StoryRecommendPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    let active = true;
     const loadStories = async () => {
-      if (!childId) {
+      if (!publicView && !childId) {
         setStories([]);
         setPageInfo(null);
         setErrorMessage("동화를 추천받을 아이를 먼저 선택해 주세요.");
@@ -55,16 +58,18 @@ function StoryRecommendPage() {
       setErrorMessage("");
 
       try {
-        const result = await getRecommendedStories({
+        const result = await (publicView ? getPublicStories : getRecommendedStories)({
           childId,
           languageCode,
           page: currentPage,
           size: 4,
         });
 
+        if (!active) return;
         setStories(result.stories);
         setPageInfo(result.pageInfo);
       } catch (error) {
+        if (!active) return;
         console.error("추천 동화 조회 오류:", error);
         setStories([]);
         setPageInfo(null);
@@ -74,12 +79,13 @@ function StoryRecommendPage() {
             : "추천 동화 목록을 불러오지 못했습니다.",
         );
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
     void loadStories();
-  }, [childId, currentPage, languageCode]);
+    return () => { active = false; };
+  }, [childId, currentPage, languageCode, publicView]);
 
   const handleLanguageChange = (nextLanguageCode: StoryLanguageCode) => {
     if (nextLanguageCode === languageCode) {
@@ -107,6 +113,10 @@ function StoryRecommendPage() {
   };
 
   const handleStoryClick = (story: RecommendedStory) => {
+    if (publicView) {
+      navigate("/guardian/login");
+      return;
+    }
     clearReadingSession();
     navigate(`/stories/read?originalStoryId=${story.id}`, {
       state: {
@@ -118,12 +128,14 @@ function StoryRecommendPage() {
   };
 
   return (
-    <main className="story-recommend-page">
+    <main className={`story-recommend-page${publicView ? " story-recommend-page--public" : ""}`}>
       <Logo />
+      {publicView && <button type="button" className="story-recommend-page__login" onClick={() => navigate("/guardian/login")}>
+        <img src={profileIcon} alt="" />보호자 로그인
+      </button>}
 
       <h1 className="story-recommend-page__title">
-        {childName}
-        {pageTitleSuffix}
+        {publicView ? "오늘은 어떤 동화를 읽어볼까?" : `${childName}${pageTitleSuffix}`}
       </h1>
 
       <div
@@ -189,6 +201,11 @@ function StoryRecommendPage() {
                 >
                   <img
                     src={story.thumbnailSrc}
+                    onError={(event) => {
+                      if (publicView && event.currentTarget.getAttribute("src") !== fallbackCover) {
+                        event.currentTarget.src = fallbackCover;
+                      }
+                    }}
                     alt=""
                     aria-hidden="true"
                     className="story-recommend-page__thumbnail"
