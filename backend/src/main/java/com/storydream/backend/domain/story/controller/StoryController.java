@@ -7,6 +7,7 @@ import com.storydream.backend.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,6 +34,8 @@ public class StoryController {
     )
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<StoryRecommendationResponse>> getRecommendations(
+            Authentication authentication,
+
             @Parameter(description = "추천 동화를 조회할 아동 ID", example = "1")
             @RequestParam Integer childId,
 
@@ -45,9 +48,10 @@ public class StoryController {
             @Parameter(description = "한 페이지에 보여줄 동화 개수", example = "4")
             @RequestParam Integer size
     ) {
+        Integer guardianId = Integer.valueOf(authentication.getName());
         return ResponseEntity.ok( // 상태 코드를 포함하는 응답 객체 생성
                 ApiResponse.success( // success, data, message 형태로 감싸는 객체
-                        storyService.getRecommendations(childId, languageCode, page, size) // service 호출 -> StoryRecommendationResponse 반환
+                        storyService.getRecommendations(guardianId, childId, languageCode, page, size) // service 호출 -> StoryRecommendationResponse 반환
                 )
         );
 

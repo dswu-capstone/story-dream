@@ -8,6 +8,8 @@ public record ReadingStartRequest(
         Integer childId,
 
         @NotNull
-        Integer originalStoryId
+        Integer originalStoryId,
+
+        Long recommendationExposureId
 ) {
 }

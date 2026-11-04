@@ -1,6 +1,7 @@
 package com.storydream.backend.domain.reading.entity;
 
 import com.storydream.backend.domain.child.entity.Child;
+import com.storydream.backend.domain.recommendation.entity.RecommendationExposure;
 import com.storydream.backend.domain.story.entity.OriginalStory;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,6 +26,10 @@ public class ReadingHistory {
     @JoinColumn(name = "original_story_id", nullable = false)
     private OriginalStory originalStory;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recommendation_exposure_id")
+    private RecommendationExposure recommendationExposure;
+
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
 
@@ -47,12 +52,14 @@ public class ReadingHistory {
     @Builder
     private ReadingHistory(
             Child child,
-            OriginalStory originalStory
+            OriginalStory originalStory,
+            RecommendationExposure recommendationExposure
     ) {
         LocalDateTime now = LocalDateTime.now();
 
         this.child = child;
         this.originalStory = originalStory;
+        this.recommendationExposure = recommendationExposure;
         this.startedAt = now;
         this.status = ReadingStatus.IN_PROGRESS;
         this.lastSentenceIdx = 0;

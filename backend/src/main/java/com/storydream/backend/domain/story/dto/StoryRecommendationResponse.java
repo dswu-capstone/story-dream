@@ -3,11 +3,14 @@ package com.storydream.backend.domain.story.dto;
 import java.util.List;
 
 public record StoryRecommendationResponse (
+    Long recommendationId,
     List<StorySummary> stories,
     PageInfo pageInfo
 ) {
     public record StorySummary(
+            Long recommendationItemId,
             Integer originalStoryId,
+            Integer rank,
             String title,
             List<String> tags,
             String coverImageUrl

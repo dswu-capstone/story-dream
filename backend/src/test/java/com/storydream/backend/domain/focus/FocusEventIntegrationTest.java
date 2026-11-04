@@ -9,6 +9,9 @@ import com.storydream.backend.domain.focus.repository.FocusLogRepository;
 import com.storydream.backend.domain.focus.service.FocusLogService;
 import com.storydream.backend.domain.guardian.entity.Guardian;
 import com.storydream.backend.domain.quiz.repository.QuizResultRepository;
+import com.storydream.backend.domain.recommendation.entity.Recommendation;
+import com.storydream.backend.domain.recommendation.entity.RecommendationExposure;
+import com.storydream.backend.domain.recommendation.entity.RecommendationItem;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
 import com.storydream.backend.domain.reading.entity.ReadingLog;
 import com.storydream.backend.domain.reading.repository.*;
@@ -75,7 +78,9 @@ class FocusEventIntegrationTest {
             factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
             factory.setManagedTypes(PersistenceManagedTypes.of(
                     FocusLog.class.getName(), ReadingHistory.class.getName(), ReadingLog.class.getName(),
-                    Child.class.getName(), Guardian.class.getName(), OriginalStory.class.getName()));
+                    Child.class.getName(), Guardian.class.getName(), OriginalStory.class.getName(),
+                    Recommendation.class.getName(), RecommendationItem.class.getName(),
+                    RecommendationExposure.class.getName()));
             factory.setJpaPropertyMap(Map.of("hibernate.hbm2ddl.auto", "create-drop"));
             return factory;
         }
