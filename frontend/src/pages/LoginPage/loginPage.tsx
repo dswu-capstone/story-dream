@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import "./loginPage.css";
@@ -29,6 +29,17 @@ function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("")
   const [socialLoginProvider, setSocialLoginProvider] =
     useState<SocialProvider | null>(null);
+
+  useEffect(() => {
+    const resetSocialLoginState = () => {
+      setSocialLoginProvider(null);
+    };
+
+    window.addEventListener("pageshow", resetSocialLoginState);
+    return () => {
+      window.removeEventListener("pageshow", resetSocialLoginState);
+    };
+  }, []);
 
   const handleSocialLogin = (provider: SocialProvider) => {
     setErrorMessage("");

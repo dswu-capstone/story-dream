@@ -2,6 +2,13 @@ package com.storydream.backend.domain.story.service;
 
 import com.storydream.backend.domain.child.entity.Child;
 import com.storydream.backend.domain.child.repository.ChildRepository;
+import com.storydream.backend.domain.recommendation.entity.Recommendation;
+import com.storydream.backend.domain.recommendation.entity.RecommendationItem;
+import com.storydream.backend.domain.recommendation.entity.RecommendationPerformanceLog;
+import com.storydream.backend.domain.recommendation.repository.RecommendationItemRepository;
+import com.storydream.backend.domain.recommendation.repository.RecommendationPerformanceLogRepository;
+import com.storydream.backend.domain.recommendation.repository.RecommendationRepository;
+import com.storydream.backend.domain.recommendation.service.RecommendationBehaviorService;
 import com.storydream.backend.domain.story.dto.*;
 import com.storydream.backend.domain.story.entity.OriginalStory;
 import com.storydream.backend.domain.story.entity.StoryLevel;
@@ -13,7 +20,10 @@ import com.storydream.backend.global.exception.BusinessException;
 import com.storydream.backend.global.exception.ErrorCode;
 import com.storydream.backend.global.storage.FileUrlProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -23,10 +33,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class StoryServiceImpl implements StoryService {
 
     private final OriginalStoryRepository originalStoryRepository;
@@ -35,6 +47,11 @@ public class StoryServiceImpl implements StoryService {
     private final StorySentenceRepository storySentenceRepository;
     private final StoryPageRepository storyPageRepository;
     private final ChildRepository childRepository;
+    private final RecommendationRepository recommendationRepository;
+    private final RecommendationItemRepository recommendationItemRepository;
+    private final RecommendationPerformanceLogRepository recommendationPerformanceLogRepository;
+    private final RecommendationBehaviorService recommendationBehaviorService;
+    private final CacheManager cacheManager;
     private final FileUrlProvider fileUrlProvider;
 
     // 추천 Client
@@ -54,12 +71,15 @@ public class StoryServiceImpl implements StoryService {
 
 
     @Override
+    @Transactional
     public StoryRecommendationResponse getRecommendations(
+            Integer guardianId,
             Integer childId,
             String languageCode,
             Integer page,
             Integer size
     ) {
+        long totalStartedAt = System.nanoTime();
 //        String generatorType;
 //        String version;
 //
@@ -82,21 +102,30 @@ public class StoryServiceImpl implements StoryService {
 //                );
 
         // ChildId로 child 엔티티 조회
-        Child child = childRepository.findById(childId)
+        Child child = childRepository.findByIdAndGuardianId(childId, guardianId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHILD_NOT_FOUND));
 
         // 관심분야 조회
         String[] interests = child.getInterest();
+        long behaviorAggregationStartedAt = System.nanoTime();
+        List<AiReadingBehavior> readingBehaviors = recommendationBehaviorService
+                .getReadingBehaviors(childId, languageCode);
+        long behaviorAggregationMs = elapsedMillis(behaviorAggregationStartedAt);
 
         // 전체 추천 결과 조회
         // 첫 호출: FastAPI 호출
         // 이후 호출: 캐시에서 호출
+        boolean cacheHit = hasRecommendationCache(childId, languageCode);
+        long aiOrCacheStartedAt = System.nanoTime();
         List<AiRecommendedStory> recommendedStories =
                 aiRecommendationClient.getRecommendations(
                         childId,
                         interests,
-                        languageCode
+                        languageCode,
+                        readingBehaviors
                 );
+        long aiOrCacheMs = elapsedMillis(aiOrCacheStartedAt);
+        long persistenceStartedAt = System.nanoTime();
 
         // page, size에 맞게 자르기
         int start = (int) pageable.getOffset();
@@ -131,23 +160,64 @@ public class StoryServiceImpl implements StoryService {
                 .map(AiRecommendedStory::originalStoryId)
                 .toList();
 
-        Map<Integer, String> coverKeys = originalStoryRepository.findAllById(storyIds)
+        Map<Integer, OriginalStory> originalStories = originalStoryRepository.findAllById(storyIds)
                 .stream()
+                .collect(Collectors.toMap(OriginalStory::getId, story -> story));
+
+        if (originalStories.size() != storyIds.stream().distinct().count()) {
+            throw new BusinessException(ErrorCode.AI_RECOMMENDATION_FAILED);
+        }
+
+        Map<Integer, String> coverKeys = originalStories.values().stream()
                 .filter(os -> os.getCoverImageUrl() != null)
                 .collect(Collectors.toMap(
                         OriginalStory::getId,
                         OriginalStory::getCoverImageUrl
                 ));
 
+        Recommendation recommendation = recommendationRepository.save(new Recommendation(
+                child,
+                languageCode,
+                "2.0.0",
+                1L,
+                "REQUEST",
+                page,
+                size,
+                interests
+        ));
+
+        List<RecommendationItem> recommendationItems = recommendationItemRepository.saveAll(
+                IntStream.range(0, storyPage.getContent().size())
+                        .mapToObj(index -> {
+                            AiRecommendedStory story = storyPage.getContent().get(index);
+                            return new RecommendationItem(
+                                    recommendation,
+                                    originalStories.get(story.originalStoryId()),
+                                    start + index + 1,
+                                    story.score(),
+                                    story.interestScore(),
+                                    story.behaviorScore(),
+                                    story.behaviorApplied()
+                            );
+                        })
+                        .toList()
+        );
+
         // 응답 DTO 반환
         List<StoryRecommendationResponse.StorySummary> stories =
-                storyPage.getContent().stream()
-                        .map(story -> new StoryRecommendationResponse.StorySummary(
+                IntStream.range(0, storyPage.getContent().size())
+                        .mapToObj(index -> {
+                            AiRecommendedStory story = storyPage.getContent().get(index);
+                            RecommendationItem item = recommendationItems.get(index);
+                            return new StoryRecommendationResponse.StorySummary(
+                                item.getId(),
                                 story.originalStoryId(),
+                                item.getRank(),
                                 story.title(),
                                 story.tags(),
                                 generateUrl(coverKeys.get(story.originalStoryId()))
-                        ))
+                            );
+                        })
                         .toList();
 
         StoryRecommendationResponse.PageInfo pageInfo =
@@ -160,10 +230,37 @@ public class StoryServiceImpl implements StoryService {
                         storyPage.hasPrevious()
                 );
 
-        return new StoryRecommendationResponse(
+        StoryRecommendationResponse response = new StoryRecommendationResponse(
+                recommendation.getId(),
                 stories,
                 pageInfo
         );
+        long persistenceMs = elapsedMillis(persistenceStartedAt);
+        long totalMs = elapsedMillis(totalStartedAt);
+
+        recommendationPerformanceLogRepository.save(new RecommendationPerformanceLog(
+                recommendation,
+                cacheHit,
+                behaviorAggregationMs,
+                aiOrCacheMs,
+                persistenceMs,
+                totalMs
+        ));
+        log.info(
+                "recommendation_timing recommendationId={} childId={} languageCode={} "
+                        + "cacheHit={} behaviorAggregationMs={} aiOrCacheMs={} "
+                        + "persistenceMs={} totalMs={} resultCount={}",
+                recommendation.getId(),
+                childId,
+                languageCode,
+                cacheHit,
+                behaviorAggregationMs,
+                aiOrCacheMs,
+                persistenceMs,
+                totalMs,
+                stories.size()
+        );
+        return response;
 //
 //        List<StoryRecommendationResponse.StorySummary> stories =
 //                storyPage.getContent().stream()
@@ -298,5 +395,14 @@ public class StoryServiceImpl implements StoryService {
             return null;
         }
         return fileUrlProvider.generateUrl(objectKey);
+    }
+
+    private boolean hasRecommendationCache(Integer childId, String languageCode) {
+        Cache cache = cacheManager.getCache("storyRecommendations");
+        return cache != null && cache.get(childId + ":" + languageCode) != null;
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 }

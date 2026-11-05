@@ -5,6 +5,10 @@ import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.quiz.entity.Quiz;
 import com.storydream.backend.domain.quiz.repository.QuizRepository;
 import com.storydream.backend.domain.quiz.repository.QuizResultRepository;
+import com.storydream.backend.domain.recommendation.entity.RecommendationExposure;
+import com.storydream.backend.domain.recommendation.entity.RecommendationInvalidationReason;
+import com.storydream.backend.domain.recommendation.repository.RecommendationExposureRepository;
+import com.storydream.backend.domain.recommendation.service.RecommendationInvalidationService;
 import com.storydream.backend.domain.reading.dto.*;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
 import com.storydream.backend.domain.reading.entity.ReadingLog;
@@ -36,6 +40,7 @@ public class ReadingServiceImpl implements ReadingService {
     private final ReadingHistoryRepository readingHistoryRepository;
     private final ChildRepository childRepository;
     private final OriginalStoryRepository originalStoryRepository;
+    private final RecommendationExposureRepository recommendationExposureRepository;
     private final ReadingLogRepository readingLogRepository;
     private final StoryLevelRepository storyLevelRepository;
     private final StoryPageRepository  storyPageRepository;
@@ -49,6 +54,7 @@ public class ReadingServiceImpl implements ReadingService {
     private final FileUrlProvider fileUrlProvider;
 
     private final FocusLogService focusLogService;
+    private final RecommendationInvalidationService recommendationInvalidationService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${story.dataset.ko.generator-type}")
@@ -79,10 +85,18 @@ public class ReadingServiceImpl implements ReadingService {
         OriginalStory originalStory = originalStoryRepository.findById(request.originalStoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STORY_NOT_FOUND));
 
+        RecommendationExposure recommendationExposure = resolveRecommendationExposure(
+                guardianId,
+                child,
+                originalStory,
+                request.recommendationExposureId()
+        );
+
         // readingHistory 생성 및 저장
         ReadingHistory readingHistory = ReadingHistory.builder()
                 .child(child)
                 .originalStory(originalStory)
+                .recommendationExposure(recommendationExposure)
                 .build();
 
         ReadingHistory savedReadingHistory = readingHistoryRepository.save(readingHistory);
@@ -174,6 +188,37 @@ public class ReadingServiceImpl implements ReadingService {
         );
     }
 
+    private RecommendationExposure resolveRecommendationExposure(
+            Integer guardianId,
+            Child child,
+            OriginalStory originalStory,
+            Long recommendationExposureId
+    ) {
+        if (recommendationExposureId == null) {
+            return null;
+        }
+
+        RecommendationExposure exposure = recommendationExposureRepository
+                .findOwnedExposureForUpdate(recommendationExposureId, guardianId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RECOMMENDATION_EXPOSURE_NOT_FOUND));
+
+        boolean matchesChild = exposure.getRecommendationItem()
+                .getRecommendation()
+                .getChild()
+                .getId()
+                .equals(child.getId());
+        boolean matchesStory = exposure.getRecommendationItem()
+                .getOriginalStory()
+                .getId()
+                .equals(originalStory.getId());
+
+        if (!matchesChild || !matchesStory) {
+            throw new BusinessException(ErrorCode.RECOMMENDATION_EXPOSURE_NOT_FOUND);
+        }
+
+        return exposure;
+    }
+
 //    @Override
 //    @Transactional
 //    public void endReading(
@@ -209,6 +254,12 @@ public class ReadingServiceImpl implements ReadingService {
             readingHistory.end();
 
             focusLogService.closeAllOpen(readingHistoryId, readingHistory.getEndedAt());
+
+            recommendationInvalidationService.invalidateActive(
+                    readingHistory.getChild().getId(),
+                    readingHistory.getOriginalStory().getLanguageCode(),
+                    RecommendationInvalidationReason.READING_COMPLETED
+            );
 
             eventPublisher.publishEvent(new ReadingCompletedEvent(readingHistoryId));
         }
@@ -361,6 +412,15 @@ public class ReadingServiceImpl implements ReadingService {
                 );
 
         List<PageResponse> pageResponses = createPageResponses(pages, allSentences);
+
+        if ("본론".equals(currentPartType)) {
+            recommendationInvalidationService.invalidateActive(
+                    readingHistory.getChild().getId(),
+                    originalStory.getLanguageCode(),
+                    RecommendationInvalidationReason.BODY_COMPLETED
+            );
+        }
+
         // 최종 응답
         return new NextPartResponse(
                 storyPart.getType(),

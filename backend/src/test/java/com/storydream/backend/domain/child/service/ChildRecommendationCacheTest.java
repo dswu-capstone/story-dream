@@ -4,6 +4,9 @@ import com.storydream.backend.domain.child.dto.ChildUpdateRequest;
 import com.storydream.backend.domain.child.entity.Child;
 import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.guardian.repository.GuardianRepository;
+import com.storydream.backend.domain.recommendation.entity.RecommendationInvalidationReason;
+import com.storydream.backend.domain.recommendation.repository.RecommendationRepository;
+import com.storydream.backend.domain.recommendation.service.ChildRecommendationLifecycleEventHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,7 @@ class ChildRecommendationCacheTest {
 
     @Autowired private ChildService childService;
     @Autowired private ChildRepository childRepository;
+    @Autowired private RecommendationRepository recommendationRepository;
     @Autowired private CacheManager cacheManager;
     @Autowired private PlatformTransactionManager transactionManager;
 
@@ -39,6 +43,7 @@ class ChildRecommendationCacheTest {
     @BeforeEach
     void setUp() {
         reset(childRepository);
+        reset(recommendationRepository);
         Child child = Child.builder()
                 .name("child")
                 .birthDate(LocalDate.of(2020, 1, 1))
@@ -64,6 +69,11 @@ class ChildRecommendationCacheTest {
         assertThat(cache.get("1:en")).isNull();
         assertThat(cache.get("2:ko", String.class)).isEqualTo("cached");
         assertThat(cache.get("2:en", String.class)).isEqualTo("cached");
+        verify(recommendationRepository).invalidateAllActive(
+                eq(1),
+                any(),
+                eq(RecommendationInvalidationReason.INTEREST_CHANGED)
+        );
     }
 
     @Test
@@ -101,6 +111,7 @@ class ChildRecommendationCacheTest {
             assertChildCachePresent();
         });
         verify(childRepository).delete(any(Child.class));
+        verifyNoInteractions(recommendationRepository);
         assertThat(cache.get("1:ko")).isNull();
         assertThat(cache.get("1:en")).isNull();
         assertThat(cache.get("2:ko")).isNotNull();
@@ -127,7 +138,11 @@ class ChildRecommendationCacheTest {
 
     @Configuration
     @EnableTransactionManagement
-    @Import({ChildServiceImpl.class, ChildRecommendationCacheEventHandler.class})
+    @Import({
+            ChildServiceImpl.class,
+            ChildRecommendationCacheEventHandler.class,
+            ChildRecommendationLifecycleEventHandler.class
+    })
     static class Config {
         @Bean
         ChildRepository childRepository() {
@@ -137,6 +152,11 @@ class ChildRecommendationCacheTest {
         @Bean
         GuardianRepository guardianRepository() {
             return mock(GuardianRepository.class);
+        }
+
+        @Bean
+        RecommendationRepository recommendationRepository() {
+            return mock(RecommendationRepository.class);
         }
 
         @Bean
