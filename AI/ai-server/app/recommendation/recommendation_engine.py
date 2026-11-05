@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from math import sqrt
 from typing import Sequence
 
@@ -24,6 +25,13 @@ class ScoringConfig:
     secondary_match_weight: float = 0.30
     base_coverage_factor: float = 0.70
     coverage_factor_weight: float = 0.30
+    interest_weight: float = 0.70
+    behavior_weight: float = 0.30
+    click_signal: float = 0.25
+    reading_start_signal: float = 0.45
+    body_completion_signal: float = 0.75
+    reading_completion_signal: float = 1.00
+    behavior_half_life_days: float = 90.0
 
     def __post_init__(self) -> None:
         bounded_values = (
@@ -35,6 +43,12 @@ class ScoringConfig:
             self.secondary_match_weight,
             self.base_coverage_factor,
             self.coverage_factor_weight,
+            self.interest_weight,
+            self.behavior_weight,
+            self.click_signal,
+            self.reading_start_signal,
+            self.body_completion_signal,
+            self.reading_completion_signal,
         )
         if any(value < 0 or value > 1 for value in bounded_values):
             raise ValueError("Scoring parameters must be between 0 and 1.")
@@ -46,6 +60,10 @@ class ScoringConfig:
             self.base_coverage_factor + self.coverage_factor_weight
         ):
             raise ValueError("Coverage factors must sum to 1.")
+        if not _approximately_one(self.interest_weight + self.behavior_weight):
+            raise ValueError("Interest and behavior weights must sum to 1.")
+        if self.behavior_half_life_days <= 0:
+            raise ValueError("Behavior half-life must be positive.")
 
 
 @dataclass(frozen=True)
@@ -76,6 +94,28 @@ class StoryCandidate:
 
 
 @dataclass(frozen=True)
+class ReadingBehavior:
+    story_id: int
+    exposure_count: int = 0
+    click_count: int = 0
+    reading_start_count: int = 0
+    body_completion_count: int = 0
+    reading_completion_count: int = 0
+    latest_positive_event_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        counts = (
+            self.exposure_count,
+            self.click_count,
+            self.reading_start_count,
+            self.body_completion_count,
+            self.reading_completion_count,
+        )
+        if any(count < 0 for count in counts):
+            raise ValueError("Behavior counts must not be negative.")
+
+
+@dataclass(frozen=True)
 class InterestMatch:
     interest: str
     metadata_text: str
@@ -91,6 +131,9 @@ class ScoredStory:
     title: str
     language_code: str
     score: float
+    interest_score: float
+    behavior_score: float
+    behavior_applied: bool
     coverage: float
     matches: tuple[InterestMatch, ...]
     unmatched_interests: tuple[str, ...]
@@ -107,13 +150,34 @@ class RecommendationScorer:
         self,
         interests: Sequence[InterestVector],
         stories: Sequence[StoryCandidate],
+        reading_behaviors: Sequence[ReadingBehavior] = (),
     ) -> list[ScoredStory]:
         unique_interests = self._deduplicate_interests(interests)
         if not unique_interests:
             return []
 
-        scored_stories = [
+        interest_scored_stories = [
             self._score_story(unique_interests, story) for story in stories
+        ]
+        behavior_profile = self._build_behavior_profile(
+            stories,
+            reading_behaviors,
+        )
+        behavior_by_story_id = {
+            behavior.story_id: behavior for behavior in reading_behaviors
+        }
+        scored_stories = [
+            self._blend_behavior_score(
+                scored_story,
+                story,
+                behavior_profile,
+                behavior_by_story_id,
+            )
+            for scored_story, story in zip(
+                interest_scored_stories,
+                stories,
+                strict=True,
+            )
         ]
         return sorted(
             scored_stories,
@@ -188,6 +252,9 @@ class RecommendationScorer:
             title=story.title,
             language_code=story.language_code,
             score=min(1.0, focused_score * coverage_factor),
+            interest_score=min(1.0, focused_score * coverage_factor),
+            behavior_score=0.0,
+            behavior_applied=False,
             coverage=coverage,
             matches=tuple(matches),
             unmatched_interests=tuple(unmatched_interests),
@@ -262,11 +329,117 @@ class RecommendationScorer:
             title=story.title,
             language_code=story.language_code,
             score=0.0,
+            interest_score=0.0,
+            behavior_score=0.0,
+            behavior_applied=False,
             coverage=0.0,
             matches=(),
             unmatched_interests=tuple(interest.text for interest in interests),
             tags=self._story_tags(story),
         )
+
+    def _build_behavior_profile(
+        self,
+        stories: Sequence[StoryCandidate],
+        reading_behaviors: Sequence[ReadingBehavior],
+    ) -> tuple[tuple[float, ...], float] | None:
+        stories_by_id = {story.story_id: story for story in stories}
+        weighted_sum: list[float] | None = None
+        total_weight = 0.0
+        total_signal = 0.0
+
+        for behavior in reading_behaviors:
+            signal = self._behavior_signal(behavior)
+            source_story = stories_by_id.get(behavior.story_id)
+            if signal <= 0 or source_story is None:
+                continue
+            total_signal += signal
+
+            for metadata in self._deduplicate_metadata(source_story.metadata):
+                weight = signal * self._metadata_weight(metadata)
+                if weighted_sum is None:
+                    weighted_sum = [0.0] * len(metadata.embedding)
+                if len(weighted_sum) != len(metadata.embedding):
+                    raise ValueError("Embedding dimensions do not match.")
+                for index, value in enumerate(metadata.embedding):
+                    weighted_sum[index] += value * weight
+                total_weight += weight
+
+        if weighted_sum is None or total_weight == 0:
+            return None
+        return (
+            tuple(value / total_weight for value in weighted_sum),
+            min(1.0, total_signal),
+        )
+
+    def _blend_behavior_score(
+        self,
+        scored_story: ScoredStory,
+        story: StoryCandidate,
+        behavior_profile: tuple[Sequence[float], float] | None,
+        behavior_by_story_id: dict[int, ReadingBehavior],
+    ) -> ScoredStory:
+        if behavior_profile is None:
+            return scored_story
+
+        profile_vector, profile_confidence = behavior_profile
+
+        prior_behavior = behavior_by_story_id.get(story.story_id)
+        if prior_behavior is not None and prior_behavior.reading_completion_count > 0:
+            behavior_score = 0.0
+        else:
+            behavior_score = max(
+                (
+                    max(0.0, cosine_similarity(profile_vector, item.embedding))
+                    for item in self._deduplicate_metadata(story.metadata)
+                ),
+                default=0.0,
+            )
+            behavior_score = min(1.0, behavior_score) * profile_confidence
+
+        final_score = (
+            scored_story.interest_score * self.config.interest_weight
+            + behavior_score * self.config.behavior_weight
+        )
+        return ScoredStory(
+            story_id=scored_story.story_id,
+            title=scored_story.title,
+            language_code=scored_story.language_code,
+            score=min(1.0, final_score),
+            interest_score=scored_story.interest_score,
+            behavior_score=behavior_score,
+            behavior_applied=True,
+            coverage=scored_story.coverage,
+            matches=scored_story.matches,
+            unmatched_interests=scored_story.unmatched_interests,
+            tags=scored_story.tags,
+        )
+
+    def _behavior_signal(self, behavior: ReadingBehavior) -> float:
+        if behavior.reading_completion_count > 0:
+            signal = self.config.reading_completion_signal
+        elif behavior.body_completion_count > 0:
+            signal = self.config.body_completion_signal
+        elif behavior.reading_start_count > 0:
+            signal = self.config.reading_start_signal
+        elif behavior.click_count > 0:
+            signal = self.config.click_signal
+        else:
+            return 0.0
+
+        occurred_at = behavior.latest_positive_event_at
+        if occurred_at is None:
+            return signal
+        if occurred_at.tzinfo is None:
+            occurred_at = occurred_at.replace(tzinfo=timezone.utc)
+        age_seconds = max(
+            0.0,
+            (datetime.now(timezone.utc) - occurred_at.astimezone(timezone.utc))
+            .total_seconds(),
+        )
+        age_days = age_seconds / 86_400
+        decay = 0.5 ** (age_days / self.config.behavior_half_life_days)
+        return signal * decay
 
     def _story_tags(self, story: StoryCandidate) -> tuple[str, ...]:
         return tuple(

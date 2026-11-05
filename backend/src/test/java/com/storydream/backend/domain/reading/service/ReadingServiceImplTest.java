@@ -1,10 +1,20 @@
 package com.storydream.backend.domain.reading.service;
 
+import com.storydream.backend.domain.child.entity.Child;
 import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.focus.repository.FocusLogRepository;
+import com.storydream.backend.domain.focus.service.FocusLogService;
+import com.storydream.backend.domain.guardian.entity.Guardian;
 import com.storydream.backend.domain.quiz.entity.Quiz;
 import com.storydream.backend.domain.quiz.repository.QuizRepository;
 import com.storydream.backend.domain.quiz.repository.QuizResultRepository;
+import com.storydream.backend.domain.recommendation.repository.RecommendationExposureRepository;
+import com.storydream.backend.domain.recommendation.entity.Recommendation;
+import com.storydream.backend.domain.recommendation.entity.RecommendationExposure;
+import com.storydream.backend.domain.recommendation.entity.RecommendationItem;
+import com.storydream.backend.domain.recommendation.entity.RecommendationInvalidationReason;
+import com.storydream.backend.domain.recommendation.service.RecommendationInvalidationService;
+import com.storydream.backend.domain.reading.dto.ReadingStartRequest;
 import com.storydream.backend.domain.reading.dto.NextPartRequest;
 import com.storydream.backend.domain.reading.dto.NextPartResponse;
 import com.storydream.backend.domain.reading.entity.ReadingHistory;
@@ -22,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -40,6 +51,10 @@ class ReadingServiceImplTest {
     private static final List<Integer> QUIZ_IDS = List.of(101, 102, 103, 104, 105);
 
     private final ReadingHistoryRepository histories = mock(ReadingHistoryRepository.class);
+    private final ChildRepository children = mock(ChildRepository.class);
+    private final OriginalStoryRepository originalStories = mock(OriginalStoryRepository.class);
+    private final RecommendationExposureRepository recommendationExposures =
+            mock(RecommendationExposureRepository.class);
     private final ReadingLogRepository logs = mock(ReadingLogRepository.class);
     private final QuizRepository quizzes = mock(QuizRepository.class);
     private final QuizResultRepository results = mock(QuizResultRepository.class);
@@ -49,22 +64,73 @@ class ReadingServiceImplTest {
     private final StoryPageRepository pages = mock(StoryPageRepository.class);
     private final StorySentenceRepository sentences = mock(StorySentenceRepository.class);
     private final FileUrlProvider urls = mock(FileUrlProvider.class);
+    private final FocusLogService focusLogService = mock(FocusLogService.class);
+    private final RecommendationInvalidationService recommendationInvalidationService =
+            mock(RecommendationInvalidationService.class);
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final DifficultyDecisionService decisions = spy(new DifficultyDecisionService(results, focus, logs));
     private ReadingServiceImpl service;
     private ReadingHistory history;
 
     @BeforeEach
     void setUp() {
-        service = new ReadingServiceImpl(histories, mock(ChildRepository.class),
-                mock(OriginalStoryRepository.class), logs, levels, pages, parts, sentences,
-                quizzes, results, decisions, urls);
+        service = new ReadingServiceImpl(histories, children,
+                originalStories, recommendationExposures, logs, levels,
+                pages, parts, sentences, quizzes, results, decisions, urls,
+                focusLogService, recommendationInvalidationService, eventPublisher);
         ReflectionTestUtils.setField(service, "koGeneratorType", "FINE_TUNED");
         ReflectionTestUtils.setField(service, "koVersion", "v1");
         OriginalStory story = mock(OriginalStory.class);
+        Child child = mock(Child.class);
+        when(child.getId()).thenReturn(11);
         when(story.getId()).thenReturn(STORY_ID);
         when(story.getLanguageCode()).thenReturn("ko");
-        history = ReadingHistory.builder().originalStory(story).build();
+        history = ReadingHistory.builder().child(child).originalStory(story).build();
         when(histories.findOwnedByIdForUpdate(HISTORY_ID, GUARDIAN_ID)).thenReturn(Optional.of(history));
+    }
+
+    @Test
+    void linksMatchingRecommendationExposureWhenReadingStarts() {
+        int childId = 11;
+        long exposureId = 30L;
+        Child child = mock(Child.class);
+        OriginalStory story = mock(OriginalStory.class);
+        Recommendation recommendation = mock(Recommendation.class);
+        RecommendationItem item = mock(RecommendationItem.class);
+        RecommendationExposure exposure = mock(RecommendationExposure.class);
+
+        when(child.getId()).thenReturn(childId);
+        when(child.getDefaultLevel()).thenReturn(1);
+        when(story.getId()).thenReturn(STORY_ID);
+        when(story.getLanguageCode()).thenReturn("ko");
+        when(recommendation.getChild()).thenReturn(child);
+        when(item.getRecommendation()).thenReturn(recommendation);
+        when(item.getOriginalStory()).thenReturn(story);
+        when(exposure.getRecommendationItem()).thenReturn(item);
+        when(children.findByIdAndGuardianId(childId, GUARDIAN_ID)).thenReturn(Optional.of(child));
+        when(originalStories.findById(STORY_ID)).thenReturn(Optional.of(story));
+        when(recommendationExposures.findOwnedExposureForUpdate(exposureId, GUARDIAN_ID))
+                .thenReturn(Optional.of(exposure));
+        when(histories.save(any(ReadingHistory.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(levels.findByOriginalStoryIdAndLevelAndGeneratorTypeAndVersion(
+                STORY_ID, 1, "FINE_TUNED", "v1"
+        )).thenReturn(Optional.of(StoryLevel.builder().id(300).level(1).build()));
+        when(parts.findByStoryLevelIdAndType(300, "서론"))
+                .thenReturn(Optional.of(StoryPart.builder().type("서론").orderNum(1).build()));
+        when(pages.findByStoryPart_StoryLevel_IdAndStoryPart_TypeOrderByPageNumAsc(300, "서론"))
+                .thenReturn(List.of(StoryPage.builder().id(400).pageNum(1)
+                        .startSentenceIdx(1).endSentenceIdx(1).build()));
+        when(sentences.findByStoryLevelIdAndSentenceIdxBetweenOrderBySentenceIdxAsc(300, 1, 1))
+                .thenReturn(List.of(StorySentence.builder().sentenceIdx(1).content("첫 문장").build()));
+
+        service.startReading(
+                GUARDIAN_ID,
+                new ReadingStartRequest(childId, STORY_ID, exposureId)
+        );
+
+        ArgumentCaptor<ReadingHistory> saved = ArgumentCaptor.forClass(ReadingHistory.class);
+        verify(histories).save(saved.capture());
+        assertThat(saved.getValue().getRecommendationExposure()).isSameAs(exposure);
     }
 
     @ParameterizedTest
@@ -199,6 +265,29 @@ class ReadingServiceImplTest {
         assertThat(response.partOrderNum()).isEqualTo(3);
         verify(decisions).decide(HISTORY_ID, "본론");
         verify(logs).save(argThat(value -> "결론".equals(value.getPartType()) && value.getLevel() == 2));
+        verify(recommendationInvalidationService).invalidateActive(
+                11,
+                "ko",
+                RecommendationInvalidationReason.BODY_COMPLETED
+        );
+    }
+
+    @Test
+    void completedReadingInvalidatesRecommendationsOnlyOnce() {
+        Guardian guardian = mock(Guardian.class);
+        when(guardian.getId()).thenReturn(GUARDIAN_ID);
+        when(history.getChild().getGuardian()).thenReturn(guardian);
+        when(histories.findById(HISTORY_ID)).thenReturn(Optional.of(history));
+
+        service.endReading(GUARDIAN_ID, HISTORY_ID);
+        service.endReading(GUARDIAN_ID, HISTORY_ID);
+
+        verify(recommendationInvalidationService, times(1)).invalidateActive(
+                11,
+                "ko",
+                RecommendationInvalidationReason.READING_COMPLETED
+        );
+        verify(focusLogService, times(1)).closeAllOpen(eq(HISTORY_ID), any());
     }
 
     @Test

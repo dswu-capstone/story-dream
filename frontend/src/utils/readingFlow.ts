@@ -15,6 +15,7 @@ type ReadingRequest = {
   advanceToNextPart: boolean;
   fromPartOrderNum?: number;
   selectedLevel?: number;
+  recommendationExposureId?: number;
 };
 
 // Share mutations across Strict Mode effect replay; retain successful start responses
@@ -70,7 +71,14 @@ export async function initializeReadingSession(request: ReadingRequest): Promise
       throw new Error("동화를 읽을 아이를 먼저 선택해 주세요.");
     }
     if (startRequest?.key !== request.key) {
-      startRequest = { key: request.key, promise: startReading(request.childId, request.originalStoryId) };
+      startRequest = {
+        key: request.key,
+        promise: startReading(
+          request.childId,
+          request.originalStoryId,
+          request.recommendationExposureId,
+        ),
+      };
     }
     let start;
     try { start = await startRequest.promise; } catch (error) {

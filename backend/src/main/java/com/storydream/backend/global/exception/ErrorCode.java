@@ -23,6 +23,9 @@ public enum ErrorCode {
 
     CHILD_NOT_FOUND(HttpStatus.NOT_FOUND,"자녀 정보를 찾을 수 없습니다."),
 
+    RECOMMENDATION_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 항목을 찾을 수 없습니다."),
+    RECOMMENDATION_EXPOSURE_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 노출 기록을 찾을 수 없습니다."),
+
     READING_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 기록을 찾을 수 없습니다."),
     READING_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "독서 로그를 찾을 수 없습니다."),
     INVALID_NEXT_PART(HttpStatus.BAD_REQUEST, "결론 이후에는 다음 파트가 없습니다."),
