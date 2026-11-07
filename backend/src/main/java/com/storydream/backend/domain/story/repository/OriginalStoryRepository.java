@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface OriginalStoryRepository extends JpaRepository<OriginalStory, Integer> {
+    Page<OriginalStory> findByLanguageCodeAndIdInOrderByIdAsc(
+            String languageCode, java.util.List<Integer> ids, Pageable pageable);
     @Query("""
             SELECT os
             FROM OriginalStory os

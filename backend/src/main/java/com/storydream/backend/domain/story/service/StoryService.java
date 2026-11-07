@@ -6,6 +6,7 @@ import com.storydream.backend.domain.story.dto.StoryRecommendationResponse;
 import com.storydream.backend.domain.story.entity.StoryPart;
 
 public interface StoryService {
+    StoryRecommendationResponse getPublicStories(String languageCode, Integer page, Integer size);
     StoryRecommendationResponse getRecommendations(
             Integer childId,
             String languageCode,
