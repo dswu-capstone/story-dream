@@ -1,6 +1,7 @@
 package com.storydream.backend.domain.story.controller;
 
 import com.storydream.backend.domain.story.dto.StoryDetailResponse;
+import com.storydream.backend.domain.story.dto.StoryPublicResponse;
 import com.storydream.backend.domain.story.dto.StoryRecommendationResponse;
 import com.storydream.backend.domain.story.service.StoryServiceImpl;
 import com.storydream.backend.global.response.ApiResponse;
@@ -21,6 +22,29 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class StoryController {
 
     private final StoryServiceImpl storyService;
+
+    @Operation(
+            summary = "비로그인 사용자용 공개 동화 목록 조회",
+            description = """
+                    로그인 및 아동 선택 없이 공개 동화 목록을 조회합니다.
+                    언어별 공개 대상 동화를 ID 순으로 반환하며 제목, 태그, 표지 URL과 페이지 정보를 제공합니다.
+                    page는 0부터 시작하고 size는 1~25까지 지정할 수 있습니다.
+                    """,
+            security = {}
+    )
+    @io.swagger.v3.oas.annotations.security.SecurityRequirements
+    @GetMapping("/public")
+    public ResponseEntity<ApiResponse<StoryPublicResponse>> getPublicStories(
+            @Parameter(description = "동화 언어 (ko: 한국어, en: 영어)", example = "ko")
+            @RequestParam(defaultValue = "ko") String languageCode,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") Integer page,
+            @Parameter(description = "페이지당 동화 수 (1~25)", example = "4")
+            @RequestParam(defaultValue = "4") Integer size
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(storyService.getPublicStories(languageCode, page, size)));
+    }
+
     @Operation(
             summary = "추천 동화 목록 조회",
             description = """
