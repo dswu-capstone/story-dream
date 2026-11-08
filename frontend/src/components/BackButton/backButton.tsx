@@ -17,8 +17,8 @@ export default function BackButton() {
   };
 
   return (
-    <button type="button" className="app-back-button" onClick={goBack}>
-      <span aria-hidden="true">←</span> 뒤로가기
+    <button type="button" className="app-back-button" onClick={goBack} aria-label="뒤로가기" title="뒤로가기">
+      <span aria-hidden="true">←</span>
     </button>
   );
 }
