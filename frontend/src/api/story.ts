@@ -270,10 +270,13 @@ export async function getPublicStories({
   );
 
   if (!response.ok) {
-    throw new Error("추천 동화 목록 조회 실패");
+    throw new Error("공개 동화 목록 조회 실패");
   }
 
   const result: StoryRecommendationApiResponse = await response.json();
+  if (!result.success || !Array.isArray(result.data?.stories)) {
+    throw new Error(result.message ?? "공개 동화 목록 조회 실패");
+  }
 
   return {
     stories: result.data.stories.map((story, index) => {
