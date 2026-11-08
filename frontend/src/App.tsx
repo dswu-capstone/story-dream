@@ -3,6 +3,7 @@ import ChildWelcomePage from "./pages/ChildWelcomePage/childWelcomePage";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import LedController from "./components/LedController/ledController";
+import BackButton from "./components/BackButton/backButton";
 import KioskExitButton from "./components/KioskExitButton/kioskExitButton";
 import FocusSessionLifecycle from "./components/FocusSessionLifecycle";
 import InteractionPage from "./pages/InteractionPage/interactionPage";
@@ -51,6 +52,7 @@ function App() {
         <Route path="/guardian/children/:childId" element={<ChildEditPage />} />
         <Route path="/guardian/children/:childId/reading-summary" element={<RequireGuardianAuth><ReadingSummaryPage /></RequireGuardianAuth>} />
       </Routes>
+      <BackButton />
       <LedController />
       <KioskExitButton />
     </BrowserRouter>

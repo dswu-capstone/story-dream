@@ -20,15 +20,13 @@ export default function ChildCompletePage() {
     return () => controller.abort();
   }, []);
   const showRecommendations = () => {
-    const childId = state?.childId ?? localStorage.getItem("recentChildId");
-    if (!childId) {
-      navigate("/children/select");
-      return;
+    const childId = state?.childId ?? localStorage.getItem("selectedChildId");
+    const childName = state?.childName ?? localStorage.getItem("selectedChildName");
+    if (childId && childName) {
+      localStorage.setItem("selectedChildId", String(childId));
+      localStorage.setItem("selectedChildName", childName);
     }
-    const params = new URLSearchParams();
-    if (childId) params.set("childId", String(childId));
-    if (state?.childName) params.set("name", state.childName);
-    navigate(`/stories/recommend?${params.toString()}`);
+    navigate("/stories/recommend");
   };
   return <main className="child-complete">
     <div className="child-complete__scene">
@@ -42,7 +40,7 @@ export default function ChildCompletePage() {
       <h1>아동 등록이 완료되었어요!</h1>
       <p>지금부터 아이에 맞는 동화를 추천해 드릴게요.</p>
       <img className="child-complete__dreamy" src={dreamy} alt="책을 읽는 드림이" />
-      {!state?.childId && !localStorage.getItem("recentChildId") && <p role="status">등록은 완료되었지만 아동 정보를 확인하지 못했어요. 추천 화면에서 아이를 선택해 주세요.</p>}
+      {!state?.childId && !localStorage.getItem("selectedChildId") && <p role="status">등록은 완료되었지만 아동 정보를 확인하지 못했어요. 추천 화면에서 아이를 선택해 주세요.</p>}
       <button className="child-complete__recommend" onClick={showRecommendations}>추천 동화 보러가기 <span aria-hidden="true">&gt;</span></button>
     </section>
     </div>

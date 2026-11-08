@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { getProfiles } from "../../api/profile";
+import type { Profile } from "../../types/profile";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import "./storyRecommendPage.css";
@@ -32,8 +34,48 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   const storedChildId = localStorage.getItem("selectedChildId");
   const storedChildName = localStorage.getItem("selectedChildName");
 
-  const childId = Number(childIdParam ?? storedChildId ?? 0);
-  const childName = childNameParam ?? storedChildName ?? "우리 아이";
+  const [childId, setChildId] = useState(() => Number(storedChildId ?? childIdParam ?? 0));
+  const [childName, setChildName] = useState(storedChildName ?? childNameParam ?? "우리 아이");
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profileError, setProfileError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (publicView) return;
+    let active = true;
+    void getProfiles().then(items => {
+      if (active) setProfiles(items);
+    }).catch(() => {
+      if (active) setProfileError("아동 목록을 불러오지 못했어요.");
+    });
+    return () => { active = false; };
+  }, [publicView]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
+
+  const selectChild = (profile: Profile) => {
+    localStorage.setItem("selectedChildId", String(profile.id));
+    localStorage.setItem("selectedChildName", profile.name);
+    setChildId(profile.id);
+    setChildName(profile.name);
+    setCurrentPage(0);
+    setMenuOpen(false);
+  };
 
   const [stories, setStories] = useState<RecommendedStory[]>([]);
   const [pageInfo, setPageInfo] = useState<StoryPageInfo | null>(null);
@@ -128,9 +170,23 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   };
 
   return (
-    <main className={`story-recommend-page${publicView ? " story-recommend-page--public" : ""}`}>
+    <main className={`story-recommend-page${publicView ? " story-recommend-page--public" : " story-recommend-page--member"}`}>
       <Logo />
-      {publicView && <button type="button" className="story-recommend-page__login" onClick={() => navigate("/guardian/login")}>
+      {!publicView && <div className="story-recommend-page__profile" ref={menuRef}>
+        <button type="button" className="story-recommend-page__profile-toggle" aria-expanded={menuOpen} aria-controls="child-picker" onClick={() => setMenuOpen(!menuOpen)}>
+          <img src={profileIcon} alt="" /><span>{childName}</span><span className={menuOpen ? "profile-chevron open" : "profile-chevron"} />
+        </button>
+        {menuOpen && <div id="child-picker" className="story-recommend-page__profile-menu">
+          <p>{profileError || `등록된 아동 ${profiles.length}명`}</p>
+          <div className="story-recommend-page__profiles">
+            {profiles.map(profile => <button type="button" key={profile.id} aria-pressed={profile.id === childId} onClick={() => selectChild(profile)}>
+              {profile.name}{profile.id === childId && <span aria-hidden="true">✓</span>}
+            </button>)}
+          </div>
+          <div className="story-recommend-page__menu-action"><button type="button" onClick={() => navigate("/guardian/children/new")}><span aria-hidden="true">＋</span> 아동 등록하기</button></div>
+          <div className="story-recommend-page__menu-action"><button type="button" onClick={() => navigate("/guardian")}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 10 12 2l9 8v11H3Z M9 21v-9h6v9" /></svg>보호자 홈으로 이동<span aria-hidden="true">›</span></button></div>
+        </div>}
+      </div>} {publicView && <button type="button" className="story-recommend-page__login" onClick={() => navigate("/guardian/login")}>
         <img src={profileIcon} alt="" />보호자 로그인
       </button>}
 

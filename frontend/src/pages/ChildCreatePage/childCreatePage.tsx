@@ -41,13 +41,16 @@ function ChildCreatePage() {
     const result = await response.json();
     if (!result.success) throw new Error("?? ??? ??????.");
     localStorage.removeItem("recentChildId");
+    localStorage.removeItem("selectedChildId");
+    localStorage.removeItem("selectedChildName");
     let childId: number | undefined;
     try {
       const profiles = await getProfiles();
       const created = profiles.filter(child => !previous.some(old => old.id === child.id) && child.name === name);
       if (created.length === 1) {
         childId = created[0].id;
-        localStorage.setItem("recentChildId", String(childId));
+        localStorage.setItem("selectedChildId", String(childId));
+        localStorage.setItem("selectedChildName", created[0].name);
       }
     } catch { /* ??? ??????? ?? ??? ???? ???. */ }
     navigate("/guardian/children/complete", { replace: true, state: { childId, childName: name } });
