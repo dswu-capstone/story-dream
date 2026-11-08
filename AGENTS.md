@@ -1,57 +1,59 @@
-# StoryDream Repository 가이드
+# StoryDream Repository Guide
 
-## 프로젝트 구조 (Project Map)
+## Project Map
 
-이 리포지토리는 세 가지 주요 애플리케이션 영역으로 구성된 모노레포(Monorepo)이다.
+This repository is a monorepo with three main application areas.
 
 - `frontend/`
-  - React + Vite + TypeScript 기반 프론트엔드
-  - 주요 소스 코드: `frontend/src/`
-  - API 클라이언트: `frontend/src/api/`
-  - 재사용 가능한 UI 컴포넌트: `frontend/src/components/`
-  - 페이지 단위 컴포넌트: `frontend/src/pages/`
-  - 공통 TypeScript 타입: `frontend/src/types/`
-  - 유틸리티 함수: `frontend/src/utils/`
+  - React + Vite + TypeScript frontend
+  - Main source code: `frontend/src/`
+  - API clients: `frontend/src/api/`
+  - Reusable UI components: `frontend/src/components/`
+  - Page-level components: `frontend/src/pages/`
+  - Shared TypeScript types: `frontend/src/types/`
+  - Utility functions: `frontend/src/utils/`
 
 - `backend/`
-  - Spring Boot 기반 백엔드
-  - Gradle 기반 Java 프로젝트
-  - 주요 소스 코드: `backend/src/`
+  - Spring Boot backend
+  - Gradle-based Java project
+  - Main source code: `backend/src/`
 
 - `AI/`
-  - AI 관련 Python 서비스
-  - `AI/ai-server/`: AI API 서버
-  - `AI/realtimeinteraction/`: 실시간 상호작용 및 컴퓨터 비전 관련 코드
+  - AI-related Python services
+  - `AI/ai-server/`: AI API server
+  - `AI/realtimeinteraction/`: realtime interaction and vision-related code
 
 - `docker-compose.yml`
-  - 백엔드와 AI 서버 컨테이너를 함께 실행하기 위한 Docker Compose 설정 파일
+  - Docker Compose configuration for running the backend and AI server containers together.
 
-## 공통 규칙 (General Rules)
+## General Rules
 
-- 코드를 수정하기 전에 기존 구현을 확인하고 현재 프로젝트 구조를 따른다.
-- 요청된 기능을 구현하는 데 필요한 최소한의 변경만 수행한다.
-- 요청과 관련 없는 리팩터링은 수행하지 않는다.
-- 반드시 필요한 경우가 아니라면 기존 파일의 이름을 변경하거나 이동하지 않는다.
-- 가능한 경우 기존 컴포넌트, API 클라이언트, 타입, 서비스 및 유틸리티를 재사용한다.
-- 프론트엔드 작업이 백엔드 API 계약에 의존하는 경우, 구현 전에 기존 백엔드 컨트롤러와 DTO 정의를 확인한다. 요청 및 응답 데이터 구조를 추측하지 않는다.
-- 요청 범위 밖의 기존 동작은 유지한다.
-- 명시적인 요청이 없는 한 Git 커밋, 푸시, 병합 또는 Git 기록 변경을 수행하지 않는다.
-- 비밀번호, 인증 정보, 토큰, API 키 또는 비공개 URL과 같은 민감한 정보를 노출하거나 코드에 하드코딩하지 않는다.
+- Before modifying code, inspect the existing implementation and follow the current project structure.
+- Make the smallest change necessary for the requested feature.
+- Do not perform unrelated refactoring.
+- Do not rename or move existing files unless required.
+- Reuse existing components, API clients, types, services, and utilities when possible.
+- Do not invent new APIs, fields, environment variables, or backend contracts.
+- When frontend work depends on a backend API contract, inspect the existing backend controller and DTO definitions before implementing it. Do not guess the request or response structure.
+- Do not modify another application area unless the task explicitly requires it.
+- Preserve existing behavior outside the requested scope.
+- Do not commit, push, merge, or modify Git history unless explicitly requested.
+- Never expose or hardcode secrets, credentials, tokens, API keys, or private URLs.
 
-## 프론트엔드 규칙 (Frontend Rules)
+## Frontend Rules
 
-작업 대상이 `frontend/`인 경우 다음 규칙을 따른다.
+When the task concerns `frontend/`:
 
-- 다른 영역의 수정이 명시적으로 요구되지 않는 한 `frontend/` 내부만 수정한다.
-- 기존 React 및 TypeScript 코드 작성 패턴을 따른다.
-- 가능한 경우 API 접근 로직은 기존 API 계층에서 관리한다.
-- 응답 데이터 구조를 중복 정의하지 않고 `frontend/src/types/`에 있는 기존 타입을 재사용한다.
-- UI 변경이 명시적으로 요청되지 않은 경우 현재 UI와 스타일을 유지한다.
-- 컴포넌트가 언마운트되거나 의존성이 변경될 때 타이머, 이벤트 리스너, 구독, 미디어 객체 및 기타 부수 효과를 적절히 정리한다.
-- 비동기 작업에서 오류가 발생하더라도 처리되지 않은 Promise 거부가 발생하지 않도록 한다.
-- 프론트엔드에서 백엔드 API 계약을 변경하지 않는다.
+- Modify only `frontend/` unless another area is explicitly required.
+- Follow the existing React and TypeScript patterns.
+- Keep API access logic in the existing API layer where possible.
+- Reuse types from `frontend/src/types/` instead of duplicating response shapes.
+- Preserve the current UI and styling unless UI changes are explicitly requested.
+- Clean up timers, event listeners, subscriptions, media objects, and other side effects when components unmount or dependencies change.
+- Handle asynchronous failures without causing unhandled Promise rejections.
+- Do not change backend API contracts from the frontend.
 
-프론트엔드 변경 후 적용 가능한 경우 다음 명령어로 검증한다.
+After frontend changes, run when applicable:
 
 ```bash
 cd frontend
@@ -59,43 +61,43 @@ npm run lint
 npm run build
 ```
 
-## 백엔드 규칙 (Backend Rules)
+## Backend Rules
 
-작업 대상이 `backend/`인 경우 다음 규칙을 따른다.
+When the task concerns `backend/`:
 
-- 다른 영역의 수정이 명시적으로 요구되지 않는 한 `backend/` 내부만 수정한다.
-- 기존 Spring Boot 패키지 구조와 계층 구조를 따른다.
-- 기존 DTO, 서비스, 리포지토리, 설정 및 예외 처리 패턴을 재사용한다.
-- 명시적으로 요청되지 않은 경우 데이터베이스 스키마나 API 계약을 변경하지 않는다.
-- 기존 서비스 계층이 있다면 비즈니스 로직을 컨트롤러에 작성하지 않는다.
-- 인증 정보, AWS 설정, 호스트 이름 또는 환경별 설정값을 코드에 하드코딩하지 않는다.
+- Modify only `backend/` unless another area is explicitly required.
+- Follow the existing Spring Boot package and layer structure.
+- Reuse existing DTOs, services, repositories, configuration, and exception-handling patterns.
+- Do not change database schemas or API contracts unless explicitly requested.
+- Keep business logic out of controllers when an existing service layer is available.
+- Do not hardcode credentials, AWS configuration, hostnames, or environment-specific values.
 
-백엔드 변경 후 적용 가능한 경우 기존 Gradle Wrapper를 사용하여 검증한다.
+After backend changes, use the existing Gradle wrapper for validation when applicable.
 
-## AI 규칙 (AI Rules)
+## AI Rules
 
-작업 대상이 `AI/`인 경우 다음 규칙을 따른다.
+When the task concerns `AI/`:
 
-- 수정하기 전에 변경 사항이 `AI/ai-server/`와 `AI/realtimeinteraction/` 중 어느 영역에 해당하는지 확인한다.
-- 현재 서비스 간 역할과 경계를 유지한다.
-- 명시적으로 요청되지 않은 경우 모델 파일, 데이터셋, 생성된 결과물 또는 대용량 바이너리 파일을 수정하지 않는다.
-- 작업에 반드시 필요한 경우가 아니라면 새로운 모델 의존성이나 외부 서비스를 도입하지 않는다.
-- 명시적으로 요청되지 않은 경우 백엔드 및 프론트엔드와의 기존 API 계약을 유지한다.
+- Identify whether the change belongs to `AI/ai-server/` or `AI/realtimeinteraction/` before editing.
+- Preserve the current service boundaries.
+- Do not modify model files, datasets, generated outputs, or large binary assets unless explicitly requested.
+- Do not introduce new model dependencies or external services unless required by the task.
+- Preserve existing API contracts with the backend and frontend unless explicitly requested.
 
-## 서비스 간 변경 규칙 (Cross-Service Changes)
+## Cross-Service Changes
 
-하나의 기능을 구현하기 위해 `frontend/`, `backend/`, `AI/` 중 둘 이상의 영역을 수정해야 할 것으로 보이는 경우 다음 순서를 따른다.
+If a feature appears to require changes in more than one of `frontend/`, `backend/`, or `AI/`:
 
-1. 먼저 현재 API 계약과 데이터 흐름을 확인한다.
-2. 여러 서비스를 변경하기보다는 기존 API 계약에 맞춰 구현하는 방식을 우선한다.
-3. 실제로 수정이 필요한 서비스가 무엇인지 명확하게 식별한다.
-4. 구현을 단순화하기 위한 목적으로 관련 없는 서비스를 수정하지 않는다.
+1. Inspect the current contract and data flow first.
+2. Prefer adapting to the existing contract over changing multiple services.
+3. Clearly identify which services actually require modification.
+4. Avoid changing unrelated services simply to simplify implementation.
 
-## 작업 완료 후 보고 (Completion)
+## Completion
 
-코드 변경을 완료한 후 다음 내용을 보고한다.
+After making changes:
 
-- **수정된 파일:** 어떤 파일을 수정했는지 명시한다.
-- **수정 이유:** 각 파일을 변경한 이유를 간략하게 설명한다.
-- **검증 결과:** 실행한 검증 명령어와 그 결과를 보고한다.
-- **남은 문제:** 해결되지 않은 오류, 구현 과정에서 적용한 가정, 검증하지 못한 동작을 명시한다.
+- Report which files were modified.
+- Briefly explain why each file was changed.
+- Report validation commands that were run.
+- Mention any remaining errors, assumptions, or unverified behavior.

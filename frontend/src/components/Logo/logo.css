@@ -1,9 +1,7 @@
 .logo {
   position: absolute;
-  z-index: 2;
-  top: clamp(12px, 2vw, 19px);
-  left: clamp(14px, 2.3vw, 22px);
-  width: clamp(110px, 14vw, 169px);
-  height: auto;
-  cursor: pointer;
+  top: 19px;
+  left: 22px;
+  width: 169px;
+  height: 113;
 }

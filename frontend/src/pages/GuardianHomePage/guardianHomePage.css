@@ -9,6 +9,10 @@
   background: #fdffed;
 }
 
+.guardian-home-page .logo {
+  width: 132px;
+  height: auto;
+}
 
 .guardian-home-page__logout {
   position: absolute;
@@ -65,6 +69,7 @@
 
 @media (max-width: 640px) {
   .guardian-home-page { padding: 110px 22px 36px; align-items: flex-start; }
+  .guardian-home-page .logo { width: 105px; }
   .guardian-home-page__logout { top: 18px; right: 16px; min-height: 44px; }
   .guardian-home-page__menus { grid-template-columns: 1fr; gap: 22px; }
   .guardian-home-page__card { min-height: 220px; padding: 28px 20px; }
