@@ -10,11 +10,6 @@ import {
   type FocusSignal,
 } from "../../api/focusInteraction";
 import { sendLedProgress } from "../../api/led";
-import {
-  recordRecommendationClick,
-  recordRecommendationExposure,
-  type RecommendationTrackingContext,
-} from "../../api/recommendation";
 import { getRealtimeSession } from "../../api/realtimeInteraction";
 import readingPlaceholder from "../../assets/reading_book.svg";
 import Logo from "../../components/Logo/logo";
@@ -38,7 +33,6 @@ type StoryReadingLocationState = {
   childId?: number;
   storyTitle?: string;
   selectedLevel?: number;
-  recommendationTracking?: RecommendationTrackingContext;
 };
 
 // 나레이션을 켤 때 HDMI 오디오 장치가 열리면서 돌입 전류가 흐르는데,
@@ -67,7 +61,6 @@ function StoryReadingPage() {
   const shouldStartNewSession = locationState?.startNewSession === true;
   const shouldAdvancePart = locationState?.advanceToNextPart === true;
   const requestedLevel = locationState?.selectedLevel;
-  const recommendationTracking = locationState?.recommendationTracking;
 
   const sessionRef = useRef<ReadingSession | null>(null);
   const leavingRef = useRef(false);
@@ -93,47 +86,12 @@ function StoryReadingPage() {
       setFocusReady(false);
       setErrorMessage("");
       try {
-        let recommendationExposureId =
-          recommendationTracking?.recommendationExposureId;
-
-        if (
-          shouldStartNewSession &&
-          recommendationTracking?.originalStoryId === originalStoryId
-        ) {
-          try {
-            recommendationExposureId ??=
-              await recordRecommendationExposure(
-                recommendationTracking.recommendationId,
-                originalStoryId,
-                recommendationTracking.viewSessionId,
-              );
-          } catch (error) {
-            console.warn(
-              "추천 노출 로그 저장 실패. 독서 시작은 계속 진행합니다.",
-              error,
-            );
-            recommendationExposureId = undefined;
-          }
-
-          if (recommendationExposureId) {
-            void recordRecommendationClick(recommendationExposureId).catch(
-              (error) => {
-                console.warn(
-                  "추천 클릭 로그 저장 실패. 독서 시작은 계속 진행합니다.",
-                  error,
-                );
-              },
-            );
-          }
-        }
-
         const session = await initializeReadingSession({
           key: location.key, originalStoryId, childId, storyTitle,
           startNewSession: shouldStartNewSession,
           advanceToNextPart: shouldAdvancePart,
           fromPartOrderNum: locationState?.fromPartOrderNum,
           selectedLevel: requestedLevel,
-          recommendationExposureId,
         });
         if (disposed) return;
         sessionRef.current = session;
@@ -152,8 +110,7 @@ function StoryReadingPage() {
     void initialize();
     return () => { disposed = true; };
   }, [childId, location.key, locationState?.fromPartOrderNum, navigate, originalStoryId,
-    recommendationTracking, requestedLevel, retryCount, shouldAdvancePart,
-    shouldStartNewSession, storyTitle]);
+    requestedLevel, retryCount, shouldAdvancePart, shouldStartNewSession, storyTitle]);
 
   const currentPart = readingSession?.currentPart;
   const pages = currentPart?.pages;

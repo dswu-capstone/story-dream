@@ -1,7 +1,12 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css");
+@import url("https://fonts.googleapis.com/css2?family=Jua&display=swap");
+
 /* ===========================
   공통 디자인 변수
 =========================== */
 :root {
+  --font-body: "Pretendard Variable", Pretendard, sans-serif;
+  --font-title: "Jua", var(--font-body);
   /* Colors */
   --color-primary: #FCC219;
   --color-primary-light: #FCC219;
@@ -44,12 +49,27 @@ body,
 }
 
 body {
-  font-family: Pretendard, sans-serif;
+  font-family: var(--font-body);
   background-color: var(--color-background);
 
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* Controls use the body font without resetting their size or weight. */
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+}
+
+/* Page headings and story titles share the display font. */
+h1:not(.realtime-interaction-page__message):not(.story-quiz-page__question):not(.interaction-page__title),
+.story-recommend-page__card-title,
+.reading-summary__history-item > span {
+  font-family: var(--font-title);
 }
 
 .app {
