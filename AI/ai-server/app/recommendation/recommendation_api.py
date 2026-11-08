@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import datetime
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ from app.recommendation.metadata_embedding_store import (
 )
 from app.recommendation.recommendation_engine import (
     InterestVector,
+    ReadingBehavior,
     RecommendationScorer,
     ScoredStory,
 )
@@ -43,11 +45,38 @@ class ApiSettings:
     embeddings_path: Path = DEFAULT_EMBEDDINGS_PATH
 
 
+class ReadingBehaviorRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    original_story_id: int = Field(gt=0, alias="originalStoryId")
+    exposure_count: int = Field(default=0, ge=0, alias="exposureCount")
+    click_count: int = Field(default=0, ge=0, alias="clickCount")
+    reading_start_count: int = Field(default=0, ge=0, alias="readingStartCount")
+    body_completion_count: int = Field(
+        default=0,
+        ge=0,
+        alias="bodyCompletionCount",
+    )
+    reading_completion_count: int = Field(
+        default=0,
+        ge=0,
+        alias="readingCompletionCount",
+    )
+    latest_positive_event_at: datetime | None = Field(
+        default=None,
+        alias="latestPositiveEventAt",
+    )
+
+
 class RecommendationRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     interests: Annotated[list[str], Field(min_length=1)]
     language_code: Literal["ko", "en"] = Field(default="ko", alias="languageCode")
+    reading_behaviors: list[ReadingBehaviorRequest] = Field(
+        default_factory=list,
+        alias="readingBehaviors",
+    )
 
     @field_validator("interests")
     @classmethod
@@ -72,6 +101,9 @@ class StoryRecommendationResponse(BaseModel):
     title: str
     language_code: str = Field(alias="languageCode")
     score: float
+    interest_score: float = Field(alias="interestScore")
+    behavior_score: float = Field(alias="behaviorScore")
+    behavior_applied: bool = Field(alias="behaviorApplied")
     tags: list[str] = Field(default_factory=list)
 
 
@@ -185,7 +217,23 @@ def create_app(
                 strict=True,
             )
         ]
-        ranked_stories = RecommendationScorer().rank(interest_vectors, stories)
+        reading_behaviors = [
+            ReadingBehavior(
+                story_id=behavior.original_story_id,
+                exposure_count=behavior.exposure_count,
+                click_count=behavior.click_count,
+                reading_start_count=behavior.reading_start_count,
+                body_completion_count=behavior.body_completion_count,
+                reading_completion_count=behavior.reading_completion_count,
+                latest_positive_event_at=behavior.latest_positive_event_at,
+            )
+            for behavior in payload.reading_behaviors
+        ]
+        ranked_stories = RecommendationScorer().rank(
+            interest_vectors,
+            stories,
+            reading_behaviors,
+        )
 
         return RecommendationResponse(
             recommendations=[
@@ -202,6 +250,9 @@ def _serialize_story(story: ScoredStory) -> StoryRecommendationResponse:
         title=story.title,
         languageCode=story.language_code,
         score=round(story.score, 6),
+        interestScore=round(story.interest_score, 6),
+        behaviorScore=round(story.behavior_score, 6),
+        behaviorApplied=story.behavior_applied,
         tags=list(story.tags),
     )
 

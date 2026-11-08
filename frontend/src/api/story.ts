@@ -9,7 +9,9 @@ import type {
 } from "../types/story";
 
 type StorySummaryResponse = {
+  recommendationItemId: number;
   originalStoryId: number;
+  rank: number;
   title: string;
   languageCode?: StoryLanguageCode;
   tags?: string[];
@@ -19,6 +21,7 @@ type StorySummaryResponse = {
 type StoryRecommendationApiResponse = {
   success: boolean;
   data: {
+    recommendationId: number;
     stories: StorySummaryResponse[];
     pageInfo: StoryPageInfo;
   };
@@ -63,6 +66,7 @@ type GetRecommendedStoriesParams = {
 };
 
 type RecommendedStoriesResult = {
+  recommendationId: number;
   stories: RecommendedStory[];
   pageInfo: StoryPageInfo;
 };
@@ -217,6 +221,7 @@ export async function getRecommendedStories({
   const result: StoryRecommendationApiResponse = await response.json();
 
   return {
+    recommendationId: result.data.recommendationId,
     stories: result.data.stories.map((story, index) => {
       const resolvedLanguageCode = story.languageCode ?? languageCode;
       const placeholder = storyPlaceholders[index % storyPlaceholders.length];
@@ -235,6 +240,8 @@ export async function getRecommendedStories({
 
       return {
         id: story.originalStoryId,
+        recommendationItemId: story.recommendationItemId,
+        rank: story.rank,
         title,
         languageCode: resolvedLanguageCode,
         // thumbnailSrc: placeholder.thumbnailSrc,

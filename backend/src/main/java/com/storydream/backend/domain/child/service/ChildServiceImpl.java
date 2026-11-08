@@ -3,6 +3,7 @@ package com.storydream.backend.domain.child.service;
 import com.storydream.backend.domain.child.dto.*;
 import com.storydream.backend.domain.child.entity.Child;
 import com.storydream.backend.domain.child.event.ChildRecommendationInvalidatedEvent;
+import com.storydream.backend.domain.child.event.ChildRecommendationInvalidationReason;
 import com.storydream.backend.domain.child.repository.ChildRepository;
 import com.storydream.backend.domain.guardian.entity.Guardian;
 import com.storydream.backend.global.exception.BusinessException;
@@ -100,7 +101,10 @@ public class ChildServiceImpl implements ChildService {
                 // request.useParentVoice()
         );
         if (interestChanged) {
-            eventPublisher.publishEvent(new ChildRecommendationInvalidatedEvent(childId));
+            eventPublisher.publishEvent(new ChildRecommendationInvalidatedEvent(
+                    childId,
+                    ChildRecommendationInvalidationReason.INTEREST_CHANGED
+            ));
         }
     }
 
@@ -114,7 +118,10 @@ public class ChildServiceImpl implements ChildService {
         Child child = getOwnedChild(guardianId, childId);
 
         childRepository.delete(child);
-        eventPublisher.publishEvent(new ChildRecommendationInvalidatedEvent(childId));
+        eventPublisher.publishEvent(new ChildRecommendationInvalidatedEvent(
+                childId,
+                ChildRecommendationInvalidationReason.CHILD_DELETED
+        ));
     }
 
     private Child getOwnedChild(

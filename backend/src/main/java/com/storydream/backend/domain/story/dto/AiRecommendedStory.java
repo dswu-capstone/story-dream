@@ -7,6 +7,9 @@ public record AiRecommendedStory(
         String title,
         String languageCode,
         double score, // python의 float: 64비트, Java의 float: 32비트, double: 64비트
+        double interestScore,
+        double behaviorScore,
+        boolean behaviorApplied,
         List<String> tags
 ) {
 }

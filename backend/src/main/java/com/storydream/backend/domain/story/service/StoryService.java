@@ -8,6 +8,7 @@ import com.storydream.backend.domain.story.entity.StoryPart;
 public interface StoryService {
     StoryRecommendationResponse getPublicStories(String languageCode, Integer page, Integer size);
     StoryRecommendationResponse getRecommendations(
+            Integer guardianId,
             Integer childId,
             String languageCode,
             Integer page,
