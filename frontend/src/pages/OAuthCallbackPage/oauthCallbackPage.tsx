@@ -1,8 +1,9 @@
+import { getProfiles } from "../../api/profile";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { exchangeSocialAuthorizationCode } from "../../api/auth";
-import logo from "../../assets/logo.svg";
+import Logo from "../../components/Logo/logo";
 import type { SocialProvider } from "../../types/auth";
 import { consumeSocialAuthRequest } from "../../utils/socialAuth";
 
@@ -32,7 +33,7 @@ function OAuthCallbackPage({ provider }: OAuthCallbackPageProps) {
         throw new Error("소셜 로그인 요청 정보를 확인할 수 없습니다.");
       }
 
-      const redirectTo = consumeSocialAuthRequest(provider, state);
+      consumeSocialAuthRequest(provider, state);
 
       if (searchParams.get("error")) {
         throw new Error("소셜 로그인이 취소되었거나 승인되지 않았습니다.");
@@ -47,7 +48,16 @@ function OAuthCallbackPage({ provider }: OAuthCallbackPageProps) {
       localStorage.setItem("accessToken", loginResult.accessToken);
       localStorage.setItem("tokenType", loginResult.tokenType);
 
-      navigate(redirectTo, { replace: true });
+      const profiles = await getProfiles();
+      if (profiles.length === 0) {
+        localStorage.removeItem("selectedChildId");
+        localStorage.removeItem("selectedChildName");
+      } else {
+        const selected = profiles.find(profile => String(profile.id) === localStorage.getItem("selectedChildId")) ?? profiles[0];
+        localStorage.setItem("selectedChildId", String(selected.id));
+        localStorage.setItem("selectedChildName", selected.name);
+      }
+      navigate(profiles.length === 0 ? "/guardian/children/welcome" : "/stories/recommend", { replace: true });
     };
 
     void completeLogin().catch((error: unknown) => {
@@ -61,7 +71,7 @@ function OAuthCallbackPage({ provider }: OAuthCallbackPageProps) {
 
   return (
     <main className="oauth-callback-page" aria-busy={!errorMessage}>
-      <img src={logo} alt="StoryDream" className="oauth-callback-logo" />
+      <Logo />
 
       <section className="oauth-callback-container" aria-live="polite">
         {errorMessage ? (

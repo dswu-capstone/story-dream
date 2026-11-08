@@ -45,7 +45,7 @@ export async function getProfiles(): Promise<Profile[]> {
 
   const result: ChildrenResponse = await response.json();
 
-  return result.data.children.map((child) => ({
+  if (!result.success || !Array.isArray(result.data?.children)) throw new Error("Failed to load children"); return result.data.children.map((child) => ({
     id: child.childId,
     name: child.name,
   }));

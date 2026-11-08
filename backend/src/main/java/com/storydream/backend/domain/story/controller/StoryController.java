@@ -21,6 +21,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class StoryController {
 
     private final StoryServiceImpl storyService;
+    @Operation(summary = "공개 동화 목록 조회", security = {})
+    @GetMapping("/public")
+    public ResponseEntity<ApiResponse<StoryRecommendationResponse>> getPublicStories(
+            @RequestParam String languageCode,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "25") Integer size) {
+        return ResponseEntity.ok(ApiResponse.success(storyService.getPublicStories(languageCode, page, size)));
+    }
+
     @Operation(
             summary = "추천 동화 목록 조회",
             description = """
