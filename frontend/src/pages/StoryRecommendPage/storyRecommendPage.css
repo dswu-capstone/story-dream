@@ -185,11 +185,9 @@
 .story-recommend-page--public .story-recommend-page__pagination { margin: 64px 0 30px; }
 @media (max-width: 600px) {
   .story-recommend-page--public .story-recommend-page__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .story-recommend-page--public .logo { width: 120px; }
 }
 
 .story-recommend-page--member { position: relative; min-height: 100vh; height: auto; padding: 7.5vw 1vw 4vw; background: #fffff0; }
-.story-recommend-page--member .logo { top: 2.5vw; left: 4.3vw; width: 14vw; }
 .story-recommend-page--member .story-recommend-page__title { margin: 0; font-size: clamp(24px, 3.3vw, 54px); }
 
 .story-recommend-page--member .story-recommend-page__carousel { width: 100%; margin-top: 5vw; grid-template-columns: 3.5vw minmax(0, 1fr) 3.5vw; column-gap: 1vw; }
@@ -217,7 +215,6 @@
 .story-recommend-page__profile button:focus-visible { outline: 3px solid #69a8e8; outline-offset: 2px; }
 @media (max-width: 600px) {
   .story-recommend-page--member { padding-top: 110px; }
-  .story-recommend-page--member .logo { width: 110px; }
   .story-recommend-page--member .story-recommend-page__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .story-recommend-page__profile-menu { padding: 14px; border-radius: 14px; }
   .story-recommend-page__profiles button { padding: 12px; }

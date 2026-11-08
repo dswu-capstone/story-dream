@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { exchangeSocialAuthorizationCode } from "../../api/auth";
-import logo from "../../assets/logo.svg";
+import Logo from "../../components/Logo/logo";
 import type { SocialProvider } from "../../types/auth";
 import { consumeSocialAuthRequest } from "../../utils/socialAuth";
 
@@ -71,7 +71,7 @@ function OAuthCallbackPage({ provider }: OAuthCallbackPageProps) {
 
   return (
     <main className="oauth-callback-page" aria-busy={!errorMessage}>
-      <img src={logo} alt="StoryDream" className="oauth-callback-logo" />
+      <Logo />
 
       <section className="oauth-callback-container" aria-live="polite">
         {errorMessage ? (
