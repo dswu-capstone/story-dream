@@ -1,4 +1,3 @@
-import { getProfiles } from "../../api/profile";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,12 +10,7 @@ function ChildCreatePage() {
   const [birthDate, setBirthDate] = useState("");
   const [defaultLevel, setDefaultLevel] = useState(1);
   const [interests, setInterests] = useState<string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
   const handleSubmit = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-    const previous = await getProfiles();
     const accessToken = localStorage.getItem("accessToken");
 
     const response = await fetch("/api/children", {
@@ -38,27 +32,7 @@ function ChildCreatePage() {
       return;
     }
 
-    const result = await response.json();
-    if (!result.success) throw new Error("?? ??? ??????.");
-    localStorage.removeItem("recentChildId");
-    localStorage.removeItem("selectedChildId");
-    localStorage.removeItem("selectedChildName");
-    let childId: number | undefined;
-    try {
-      const profiles = await getProfiles();
-      const created = profiles.filter(child => !previous.some(old => old.id === child.id) && child.name === name);
-      if (created.length === 1) {
-        childId = created[0].id;
-        localStorage.setItem("selectedChildId", String(childId));
-        localStorage.setItem("selectedChildName", created[0].name);
-      }
-    } catch { /* ??? ??????? ?? ??? ???? ???. */ }
-    navigate("/guardian/children/complete", { replace: true, state: { childId, childName: name } });
-    } catch {
-      alert("?? ??? ???? ?????. ???? ??? ?? ??? ??? ???.");
-    } finally {
-      setSubmitting(false);
-    }
+    navigate("/guardian/children");
   };
 
   return (
@@ -159,7 +133,6 @@ function ChildCreatePage() {
           type="button"
           className="child-create-page__submit-button"
           onClick={handleSubmit}
-          disabled={submitting}
         >
           등록하기
         </button>

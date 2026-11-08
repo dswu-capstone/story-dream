@@ -9,6 +9,13 @@
   color: #111827;
 }
 
+.realtime-interaction-page > .logo {
+  top: 18px;
+  left: 20px;
+  width: 132px;
+  height: auto;
+  cursor: pointer;
+}
 
 .realtime-interaction-page__stage {
   position: absolute;

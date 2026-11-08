@@ -28,12 +28,3 @@ export async function exchangeSocialAuthorizationCode(
 
   return result.data;
 }
- 
-export async function getGuardian(signal?: AbortSignal): Promise<import("../types/auth").Guardian> {
-  const response = await fetch("/api/guardians/me", {
-    headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` }, signal,
-  });
-  const result: ApiResponse<import("../types/auth").Guardian> = await response.json();
-  if (!response.ok || !result.success || !result.data) throw new Error("보호자 정보 조회 실패");
-  return result.data;
-}
