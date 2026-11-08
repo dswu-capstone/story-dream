@@ -9,9 +9,7 @@ import type {
 } from "../types/story";
 
 type StorySummaryResponse = {
-  recommendationItemId: number;
   originalStoryId: number;
-  rank: number;
   title: string;
   languageCode?: StoryLanguageCode;
   tags?: string[];
@@ -21,7 +19,6 @@ type StorySummaryResponse = {
 type StoryRecommendationApiResponse = {
   success: boolean;
   data: {
-    recommendationId: number;
     stories: StorySummaryResponse[];
     pageInfo: StoryPageInfo;
   };
@@ -66,7 +63,6 @@ type GetRecommendedStoriesParams = {
 };
 
 type RecommendedStoriesResult = {
-  recommendationId: number;
   stories: RecommendedStory[];
   pageInfo: StoryPageInfo;
 };
@@ -221,7 +217,6 @@ export async function getRecommendedStories({
   const result: StoryRecommendationApiResponse = await response.json();
 
   return {
-    recommendationId: result.data.recommendationId,
     stories: result.data.stories.map((story, index) => {
       const resolvedLanguageCode = story.languageCode ?? languageCode;
       const placeholder = storyPlaceholders[index % storyPlaceholders.length];
@@ -240,12 +235,69 @@ export async function getRecommendedStories({
 
       return {
         id: story.originalStoryId,
-        recommendationItemId: story.recommendationItemId,
-        rank: story.rank,
         title,
         languageCode: resolvedLanguageCode,
         // thumbnailSrc: placeholder.thumbnailSrc,
         thumbnailSrc: story.coverImageUrl ?? placeholder.thumbnailSrc,
+        tagLabel,
+      };
+    }),
+    pageInfo: result.data.pageInfo,
+  };
+}
+
+export async function getPublicStories({
+
+  languageCode = "ko",
+  page = 0,
+  size = 4,
+}: Omit<GetRecommendedStoriesParams, "childId">): Promise<RecommendedStoriesResult> {
+  const searchParams = new URLSearchParams({
+
+    languageCode,
+    page: String(page),
+    size: String(size),
+  });
+
+  const response = await fetch(
+    `/api/stories/public?${searchParams.toString()}`,
+    {
+      method: "GET",
+      headers: {
+
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("추천 동화 목록 조회 실패");
+  }
+
+  const result: StoryRecommendationApiResponse = await response.json();
+
+  return {
+    stories: result.data.stories.map((story, index) => {
+      const resolvedLanguageCode = story.languageCode ?? languageCode;
+      const placeholder = storyPlaceholders[index % storyPlaceholders.length];
+      const title =
+        resolvedLanguageCode === "en"
+          ? story.title.replace(/^\d+_/, "")
+          : story.title;
+      const normalizedTitle = normalizeStoryLabel(title);
+      const tagLabel =
+        story.tags
+          ?.map((tag) => tag.trim())
+          .find(
+            (tag) =>
+              tag.length > 0 && normalizeStoryLabel(tag) !== normalizedTitle,
+          ) ?? "";
+
+      return {
+        id: story.originalStoryId,
+        title,
+        languageCode: resolvedLanguageCode,
+        // thumbnailSrc: placeholder.thumbnailSrc,
+        thumbnailSrc: story.coverImageUrl || placeholder.thumbnailSrc,
         tagLabel,
       };
     }),

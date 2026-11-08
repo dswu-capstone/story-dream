@@ -2,8 +2,6 @@ export type StoryLanguageCode = "ko" | "en";
 
 export type RecommendedStory = {
   id: number;
-  recommendationItemId: number;
-  rank: number;
   title: string;
   languageCode: StoryLanguageCode;
   thumbnailSrc: string;

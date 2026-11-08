@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { getProfiles } from "../../api/profile";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import "./loginPage.css";
 
@@ -14,32 +15,13 @@ import { startSocialLogin } from "../../utils/socialAuth";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const redirectState = location.state as { redirectTo?: unknown } | null;
-  const requestedRedirect = redirectState?.redirectTo;
-  const redirectTo = typeof requestedRedirect === "string" &&
-    requestedRedirect.startsWith("/") &&
-    !requestedRedirect.startsWith("//")
-    ? requestedRedirect
-    : "/guardian";
+  const redirectTo = "/stories/recommend";
 
   const [loginIdValue, setLoginIdValue] = useState("")
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("")
   const [socialLoginProvider, setSocialLoginProvider] =
     useState<SocialProvider | null>(null);
-
-  useEffect(() => {
-    const resetSocialLoginState = () => {
-      setSocialLoginProvider(null);
-    };
-
-    window.addEventListener("pageshow", resetSocialLoginState);
-    return () => {
-      window.removeEventListener("pageshow", resetSocialLoginState);
-    };
-  }, []);
 
   const handleSocialLogin = (provider: SocialProvider) => {
     setErrorMessage("");
@@ -89,7 +71,16 @@ function LoginPage() {
 
       window.confirm("로그인 성공");
 
-      navigate(redirectTo, { replace: true });
+      const profiles = await getProfiles();
+      if (profiles.length === 0) {
+        localStorage.removeItem("selectedChildId");
+        localStorage.removeItem("selectedChildName");
+      } else {
+        const selected = profiles.find(profile => String(profile.id) === localStorage.getItem("selectedChildId")) ?? profiles[0];
+        localStorage.setItem("selectedChildId", String(selected.id));
+        localStorage.setItem("selectedChildName", selected.name);
+      }
+      navigate(profiles.length === 0 ? "/guardian/children/welcome" : redirectTo, { replace: true });
     } catch {
       setErrorMessage("서버와 연결할 수 없습니다.");
     }

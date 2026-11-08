@@ -44,18 +44,11 @@ function getAuthorizationHeaders() {
 export async function startReading(
   childId: number,
   originalStoryId: number,
-  recommendationExposureId?: number,
 ): Promise<ReadingStartResult> {
   const response = await fetch("/api/reading-histories/start", {
     method: "POST",
     headers: getAuthorizationHeaders(),
-    body: JSON.stringify({
-      childId,
-      originalStoryId,
-      ...(recommendationExposureId
-        ? { recommendationExposureId }
-        : {}),
-    }),
+    body: JSON.stringify({ childId, originalStoryId }),
   });
 
   return parseResponse<ReadingStartResult>(
