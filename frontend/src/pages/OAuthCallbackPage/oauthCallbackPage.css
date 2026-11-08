@@ -9,14 +9,6 @@
   background: var(--color-background);
 }
 
-.oauth-callback-logo {
-  position: absolute;
-  z-index: 2;
-  top: clamp(24px, 5.7vh, 38px);
-  left: clamp(24px, 5.9vw, 68px);
-  width: clamp(136px, 14.7vw, 169px);
-  height: auto;
-}
 
 .oauth-callback-container {
   position: relative;
@@ -168,9 +160,6 @@
 }
 
 @media (max-width: 600px) {
-  .oauth-callback-logo {
-    width: 130px;
-  }
 
   .oauth-callback-circle {
     width: 150px;

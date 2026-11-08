@@ -41,7 +41,38 @@ import java.util.stream.IntStream;
 @Slf4j
 public class StoryServiceImpl implements StoryService {
 
+    @Override
+    public StoryRecommendationResponse getPublicStories(String languageCode, Integer page, Integer size) {
+        List<Integer> ids;
+        if ("ko".equals(languageCode)) {
+            ids = List.of(4,11,13,15,17,19,20,24,25,26,27,29,31,106,108,111,112,114,115,116,118,123,126,128,129);
+        } else if ("en".equals(languageCode)) {
+            ids = List.of(50,52,54,55,58,61,68,70,71,77,78,81,82,85,89,90,91,94,132,133,138,139,142,148,153);
+        } else {
+            throw new BusinessException(ErrorCode.INVALID_LANGUAGE);
+        }
+        if (page == null || page < 0 || size == null || size < 1 || size > 25) {
+            throw new BusinessException(ErrorCode.INVALID_STORY_PAGE);
+        }
+        Page<OriginalStory> result = originalStoryRepository.findByLanguageCodeAndIdInOrderByIdAsc(
+                languageCode, ids, PageRequest.of(page, size));
+        List<Integer> pageIds = result.getContent().stream().map(OriginalStory::getId).toList();
+        Map<Integer, List<String>> tagsByStoryId = pageIds.isEmpty() ? Map.of()
+                : storyMetadataRepository.findByOriginalStory_IdIn(pageIds).stream()
+                .collect(Collectors.toMap(metadata -> metadata.getOriginalStory().getId(),
+                        metadata -> java.util.Arrays.asList(metadata.getTags())));
+        List<StoryRecommendationResponse.StorySummary> stories = result.getContent().stream()
+                .map(story -> new StoryRecommendationResponse.StorySummary(
+                        story.getId(), story.getTitle(), tagsByStoryId.getOrDefault(story.getId(), List.of()),
+                        generateUrl(story.getCoverImageUrl())))
+                .toList();
+        return new StoryRecommendationResponse(stories, new StoryRecommendationResponse.PageInfo(
+                result.getNumber(), result.getSize(), result.getTotalPages(), result.getTotalElements(),
+                result.hasNext(), result.hasPrevious()));
+    }
+
     private final OriginalStoryRepository originalStoryRepository;
+    private final StoryMetadataRepository storyMetadataRepository;
     private final StoryLevelRepository storyLevelRepository;
     private final StoryPartRepository storyPartRepository;
     private final StorySentenceRepository storySentenceRepository;
