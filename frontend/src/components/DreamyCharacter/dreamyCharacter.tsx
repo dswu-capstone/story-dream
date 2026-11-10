@@ -238,6 +238,8 @@ function DreamyCharacter({
   return (
     <div
       className={`dreamy-character ${className}`.trim()}
+      data-ready={isReady}
+      data-load-error={hasError}
       role="img"
       aria-label={`${emotionLabels[emotion]} 드리미 캐릭터`}
       aria-busy={!isReady && !hasError}

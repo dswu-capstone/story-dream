@@ -2,12 +2,17 @@
   position: relative;
   width: 100%;
   height: 100%;
-  padding: 24px 24px 28px;
-  background: linear-gradient(180deg, #fcffef 0%, #fdfdeb 100%);
+  padding: 124px 5.3% 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  isolation: isolate;
+  background: radial-gradient(ellipse at 0% 100%, #dceccf 0 18%, transparent 18.3%), radial-gradient(ellipse at 100% 100%, #e5dcf6 0 20%, transparent 20.3%), linear-gradient(180deg, #eaf7ff, #fff7df);
 }
 
 .story-quiz-page__status {
-  margin-top: 180px;
+  margin: auto;
   color: var(--color-gray-dark);
   font-size: 24px;
   text-align: center;
@@ -30,27 +35,35 @@
 }
 
 .story-quiz-page__content {
-  width: min(760px, calc(100% - 80px));
-  margin: 92px auto 0;
+  width: min(760px, 100%);
+  margin: auto;
+  flex-shrink: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .story-quiz-page__question {
-  max-width: 620px;
-  font-size: 34px;
+  width: 100%;
+  padding: 22px 28px;
+  border: 2px solid #efdfb5;
+  border-radius: 28px;
+  background: #fffdf4;
+  box-shadow: 0 7px 0 #efdfb566;
+  font-size: clamp(25px, 3.3vw, 34px);
   font-weight: 500;
   line-height: 1.35;
   color: #111;
   text-align: center;
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .story-quiz-page__choices {
   width: 100%;
-  max-width: 420px;
-  margin-top: 52px;
+  max-width: 560px;
+  margin-top: 40px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -60,8 +73,8 @@
   max-width: 390px;
   flex-direction: row;
   justify-content: center;
-  gap: 56px;
-  margin-top: 54px;
+  gap: 24px;
+  margin-top: 40px;
 }
 
 .story-quiz-page__choice {
@@ -117,11 +130,13 @@
 
 .story-quiz-page__submit-button {
   width: min(488px, 100%);
-  height: 78px;
-  margin-top: 72px;
+  min-height: 58px;
+  padding: 12px 20px;
+  margin-top: 44px;
   border: none;
   border-radius: 12px;
-  background: #f3c847;
+  background: #ffd15a;
+  box-shadow: 0 5px 0 #dca637;
   color: #111;
   font-size: 28px;
   font-weight: 500;
@@ -138,4 +153,42 @@
 .story-quiz-page__submit-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.story-quiz-page__question,
+.story-quiz-page__choice-label,
+.story-quiz-page__ox-button,
+.story-quiz-page__submit-button,
+.story-quiz-page__counter {
+  font-family: var(--font-title);
+  font-weight: 400;
+}
+.story-quiz-page__choice-label { overflow-wrap: anywhere; line-height: 1.35; }
+.story-quiz-page__choice--selected { border-color: #d89d21; background: #fff0b3; box-shadow: 0 4px 0 #d89d21; }
+.story-quiz-page__choice--selected .story-quiz-page__choice-label { color: #61420a; }
+.story-quiz-page__ox-button { border: 3px solid #fff; box-shadow: 0 5px 0 #dfb499; }
+.story-quiz-page__ox-button:last-child { box-shadow: 0 5px 0 #a5bce5; }
+.story-quiz-page__ox-button--selected { outline: 4px solid #b67b17; outline-offset: 3px; }
+.story-quiz-page button:focus-visible { outline: 3px solid #2569ad; outline-offset: 5px; }
+.story-quiz-page .story-progress-footer { position: static; flex-shrink: 0; margin: 26px auto 0; width: 100%; }
+@media (hover: hover) {
+  .story-quiz-page__choice:not(:disabled):hover { transform: translateY(-2px); background: #fff3cb; }
+  .story-quiz-page__submit-button:not(:disabled):hover { background: #ffc434; }
+}
+@media (max-width: 640px) {
+  .story-quiz-page { padding: 112px 16px 16px; }
+  .story-quiz-page__counter { top: 20px; right: 16px; min-width: 76px; height: 40px; }
+  .story-quiz-page__question { padding: 18px; }
+  .story-quiz-page__choice { padding: 12px; column-gap: 10px; }
+  .story-quiz-page__choice-label { font-size: 22px; }
+  .story-quiz-page__ox-button { width: min(40vw, 168px); }
+}
+@media (max-height: 650px) {
+  .story-quiz-page__question { padding: 14px 20px; }
+  .story-quiz-page__choices { margin-top: 30px; gap: 20px; }
+  .story-quiz-page__submit-button { margin-top: 32px; }
+  .story-quiz-page .story-progress-footer { margin-top: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .story-quiz-page__choice { transition: none; }
 }

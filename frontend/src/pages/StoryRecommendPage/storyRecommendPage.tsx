@@ -40,6 +40,43 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   const [profileError, setProfileError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [authStatus, setAuthStatus] = useState<"checking" | "guest" | "authenticated">(
+    () => publicView
+      ? (localStorage.getItem("accessToken") ? "checking" : "guest")
+      : "authenticated",
+  );
+
+  useEffect(() => {
+    if (!publicView) return;
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    let active = true;
+    void getProfiles().then((profiles) => {
+      if (!active) return;
+      if (localStorage.getItem("accessToken") !== token) {
+        setAuthStatus("guest");
+        return;
+      }
+      setAuthStatus("authenticated");
+      const selected = profiles.find(
+        (profile) => String(profile.id) === localStorage.getItem("selectedChildId"),
+      );
+      if (!selected) {
+        localStorage.removeItem("selectedChildId");
+        localStorage.removeItem("selectedChildName");
+        navigate("/children/select", { replace: true });
+        return;
+      }
+      localStorage.setItem("selectedChildName", selected.name);
+      navigate("/stories/recommend", { replace: true });
+    }).catch(() => {
+      // 인증 또는 네트워크 오류 시 공개 목록을 유지한다.
+      if (active) setAuthStatus("guest");
+    });
+
+    return () => { active = false; };
+  }, [navigate, publicView]);
 
   useEffect(() => {
     if (publicView) return;
@@ -170,7 +207,8 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   };
 
   return (
-    <main className={`story-recommend-page${publicView ? " story-recommend-page--public" : " story-recommend-page--member"}`}>
+    <main className="story-recommend-page">
+      <div className="story-garden" aria-hidden="true"><span>☁</span><span>☁</span><i>✦</i></div>
       <Logo />
       {!publicView && <div className="story-recommend-page__profile" ref={menuRef}>
         <button type="button" className="story-recommend-page__profile-toggle" aria-expanded={menuOpen} aria-controls="child-picker" onClick={() => setMenuOpen(!menuOpen)}>
@@ -190,8 +228,12 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
         <img src={profileIcon} alt="" />보호자 로그인
       </button>}
 
-      <h1 className="story-recommend-page__title">
-        {publicView ? "오늘은 어떤 동화를 읽어볼까?" : `${childName}${pageTitleSuffix}`}
+      <h1 className="story-recommend-page__title" aria-live="polite" aria-busy={authStatus === "checking"}>
+        {authStatus === "checking" || (publicView && authStatus === "authenticated")
+          ? "로그인 상태 확인 중..."
+          : authStatus === "guest"
+            ? "오늘은 어떤 동화를 읽어볼까?"
+            : `${childName}${pageTitleSuffix}`}
       </h1>
 
       <div
@@ -308,8 +350,20 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
           </div>
         </>
       )}
+      <aside className="story-garden-play" aria-label="동화 정원 놀이">
+        <p>톡톡! 정원 친구들에게 인사해 봐요</p>
+        <div>{["🌼", "🍄", "🐣"].map((icon, index) => <GardenFriend key={icon} icon={icon} index={index} />)}</div>
+      </aside>
     </main>
   );
+}
+
+function GardenFriend({ icon, index }: { icon: string; index: number }) {
+  const [awake, setAwake] = useState(false);
+  return <button type="button" aria-label={`${["꽃", "버섯", "병아리"][index]}에게 인사하기`} aria-pressed={awake} onClick={() => setAwake(previous => !previous)}>
+    <small aria-live="polite">{awake ? ["활짝! 반가워!", "반짝! 마법이야!", "삐약! 같이 읽자!"][index] : ""}</small>
+    <span aria-hidden="true">{awake ? ["🌻", "✨", "🐥"][index] : icon}</span>
+  </button>;
 }
 
 export default StoryRecommendPage;
