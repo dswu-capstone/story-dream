@@ -1,3 +1,4 @@
+import { callChild } from "../../utils/childAddress";
 import {
   useCallback,
   useEffect,
@@ -85,18 +86,6 @@ type StoryContextSnapshot = {
   totalParts: number;
   sentences: string[];
 };
-
-function callChild(childName: string) {
-  if (childName === "아이") return "우리 친구야";
-
-  const lastCharacter = childName.at(-1) ?? "";
-  const codePoint = lastCharacter.charCodeAt(0);
-  const isHangulSyllable = codePoint >= 0xac00 && codePoint <= 0xd7a3;
-  const hasFinalConsonant =
-    isHangulSyllable && (codePoint - 0xac00) % 28 !== 0;
-
-  return `${childName}${hasFinalConsonant ? "아" : "야"}`;
-}
 
 function makeDefaultQuestion(childName: string, storyTitle = "이야기") {
   return `${callChild(childName)}!\n방금 읽은 「${storyTitle}」에서 무슨 일이 있었는지 이야기해 줄래?`;
@@ -522,6 +511,7 @@ function RealtimeInteractionPage() {
           "[행동] 위에 제공된 동화 내용만 근거로 아이의 답이 문맥상 맞는지 판단하라. 표현이 달라도 뜻이 맞으면 정답이다.",
           "동의어, 조사 생략, 짧은 답변도 핵심 사실이 맞으면 정답이다. 본문과 모순되거나 질문에 답하지 않는 말, 모르겠다는 답은 정답으로 추측하지 않는다.",
           "feedback은 짧은 두 문장 이내다. 정답이면 맞힌 사실을 확인하고, 오답이면 탓하지 않고 본문에 나온 사실을 알려 준다. 마지막에는 함께 이야기를 이어 읽자고 권한다.",
+          "feedback의 격려 문장은 ~ 또는 !로 부드럽게 마무리한다. 예: 함께 다음 이야기도 읽어 보자~ 기호는 문장마다 하나만 사용한다.",
           "답변이 불명확하면 틀렸다고 단정하는 말 대신 본문의 사실을 안내한다. 능력이나 성격을 평가하지 않으며 추가 질문을 하지 않는다. feedback에는 이름을 부르는 호칭을 넣지 않는다.",
           "[예외] 아직 읽지 않은 뒤의 사건은 언급하거나 추측하지 말고, 제공되지 않은 인물·사건을 만들지 마라.",
           "correct는 문자열이 아닌 불리언 true 또는 false다. emotion은 기쁨 또는 놀람 중 하나이며 기본은 기쁨이다. 오답이라고 슬픔이나 화남을 표현하지 않는다.",
@@ -852,7 +842,7 @@ function RealtimeInteractionPage() {
       <Logo />
 
 
-      <section className="realtime-interaction-page__stage" aria-label="드리미와 동화 퀴즈">
+      <section className="realtime-interaction-page__stage" data-phase={phase} aria-label="드리미와 동화 퀴즈">
         <div
           className={`realtime-interaction-page__bubble realtime-interaction-page__bubble--${bubbleLayout.size}`}
           style={bubbleLayout.style}

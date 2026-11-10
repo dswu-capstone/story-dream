@@ -17,12 +17,14 @@
 }
 
 .realtime-interaction-page__bubble {
+  --bubble-border: #efdfb5;
+  --bubble-background: #fffdf4;
   position: relative;
   min-width: 0; width: 100%; min-height: 220px;
   display: flex; align-items: center;
   padding: clamp(24px, 4vw, 44px);
-  border: 2px solid #efdfb5; border-radius: 32px;
-  background: #fffdf4; box-shadow: 0 7px 0 #efdfb566;
+  border: 2px solid var(--bubble-border); border-radius: 32px;
+  background: var(--bubble-background); box-shadow: 0 7px 0 #efdfb566;
 }
 
 .realtime-interaction-page__bubble--medium {
@@ -38,9 +40,11 @@
 }
 
 .realtime-interaction-page__bubble::after {
-  content: ''; position: absolute; right: -24px; bottom: 36px;
-  width: 28px; height: 32px; background: #fffdf4;
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  content: ''; position: absolute; right: -13px; bottom: 40px;
+  width: 24px; height: 24px; background: var(--bubble-background);
+  border-top: 2px solid var(--bubble-border);
+  border-right: 2px solid var(--bubble-border);
+  transform: rotate(45deg);
 }
 
 .realtime-interaction-page__message {
@@ -68,9 +72,10 @@
 }
 
 .realtime-interaction-page__character-button {
-  width: 100%; min-width: 0; max-width: 240px;
+  width: 120%; min-width: 0; max-width: 300px;
   justify-self: center; padding: 0; border: 0; border-radius: 45%;
   background: transparent; cursor: pointer;
+  transform-origin: 50% 70%;
 }
 
 .realtime-interaction-page__character-button:disabled {
@@ -85,6 +90,12 @@
 .realtime-interaction-page__character.dreamy-character {
   width: 100%;
   filter: drop-shadow(0 12px 12px rgba(73, 124, 154, 0.08));
+}
+
+.realtime-interaction-page__character[data-ready="true"] {
+  z-index: 3;
+  transform-origin: 50% 70%;
+  animation: dreamy-fly-in 1600ms cubic-bezier(.22, .61, .36, 1) both;
 }
 
 .realtime-interaction-page__controls {
@@ -292,7 +303,15 @@
   }
 }
 
+@keyframes dreamy-fly-in {
+  from { opacity: 0; transform: translate(calc(-1 * min(58vw, 660px)), -140px) scale(.35); }
+  15% { opacity: 1; }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .realtime-interaction-page__character[data-ready="true"],
+  .realtime-interaction-page__character-button,
   .realtime-interaction-page__status-dot,
   .realtime-interaction-page__start-button,
   .realtime-interaction-page__continue-button,
@@ -316,11 +335,40 @@
   .realtime-interaction-page { padding: 112px 16px 16px; }
   .realtime-interaction-page__stage { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .realtime-interaction-page__bubble { min-height: 0; padding: 24px; }
-  .realtime-interaction-page__bubble::after { right: calc(50% - 16px); bottom: -24px; transform: rotate(90deg); }
-  .realtime-interaction-page__character-button { width: 140px; }
+  .realtime-interaction-page__bubble::after { right: calc(50% - 12px); bottom: -13px; transform: rotate(135deg); }
+  .realtime-interaction-page__character-button { width: 190px; }
   .realtime-interaction-page__controls { margin-top: 28px; gap: 16px; }
 }
 @media (max-height: 650px) {
   .realtime-interaction-page__bubble { min-height: 0; padding: 24px; }
   .realtime-interaction-page__controls { margin-top: 24px; }
+}
+
+/* Keep the bubble's layout space while the character is arriving. */
+.realtime-interaction-page__bubble { visibility: hidden; opacity: 0; }
+.realtime-interaction-page__stage:has(.realtime-interaction-page__character[data-ready="true"]) .realtime-interaction-page__bubble {
+  animation: dreamy-bubble-reveal 280ms ease-out 1600ms forwards;
+}
+.realtime-interaction-page__stage[data-phase="feedback"] .realtime-interaction-page__character-button {
+  animation: dreamy-feedback-jump 600ms ease-in-out;
+}
+@keyframes dreamy-bubble-reveal {
+  from { visibility: visible; opacity: 0; transform: translateY(8px); }
+  to { visibility: visible; opacity: 1; transform: translateY(0); }
+}
+@keyframes dreamy-feedback-jump {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-40px); }
+}
+.realtime-interaction-page__stage:has(.realtime-interaction-page__character[data-load-error="true"]) .realtime-interaction-page__bubble {
+  animation: none; visibility: visible; opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .realtime-interaction-page__stage:has(.realtime-interaction-page__character[data-ready="true"]) .realtime-interaction-page__bubble,
+  .realtime-interaction-page__stage .realtime-interaction-page__bubble,
+  .realtime-interaction-page__stage[data-phase="feedback"] .realtime-interaction-page__character-button {
+    animation: none;
+    visibility: visible;
+    opacity: 1;
+  }
 }
