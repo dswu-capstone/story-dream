@@ -30,13 +30,13 @@ function App() {
     <BrowserRouter>
       <FocusSessionLifecycle />
       <Routes>
-        <Route path="/" element={<StoryRecommendPage publicView />} />
+        <Route path="/" element={<StoryRecommendPage key="public" publicView />} />
         <Route path="/children/select" element={<ProfileSelectPage />} />
         <Route path="/children/level-adjust/:variant" element={<InteractionPage />} />
         <Route path="/stories/complete" element={<ReadingCompletePage />} />
         <Route path="/stories/quiz" element={<StoryQuizPage />} />
         <Route path="/stories/result" element={<StoryResultPage />} />
-        <Route path="/stories/recommend" element={<StoryRecommendPage />} />
+        <Route path="/stories/recommend" element={<StoryRecommendPage key="recommend" />} />
         <Route path="/stories/read" element={<StoryReadingPage />} />
         <Route path="/stories/interaction" element={<RealtimeInteractionPage />} />
         <Route path="/guardian/login" element={<LoginPage />} />

@@ -42,6 +42,32 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!publicView) return;
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    let active = true;
+    void getProfiles().then((profiles) => {
+      if (!active || localStorage.getItem("accessToken") !== token) return;
+      const selected = profiles.find(
+        (profile) => String(profile.id) === localStorage.getItem("selectedChildId"),
+      );
+      if (!selected) {
+        localStorage.removeItem("selectedChildId");
+        localStorage.removeItem("selectedChildName");
+        navigate("/children/select", { replace: true });
+        return;
+      }
+      localStorage.setItem("selectedChildName", selected.name);
+      navigate("/stories/recommend", { replace: true });
+    }).catch(() => {
+      // 인증 또는 네트워크 오류 시 공개 목록을 유지한다.
+    });
+
+    return () => { active = false; };
+  }, [navigate, publicView]);
+
+  useEffect(() => {
     if (publicView) return;
     let active = true;
     void getProfiles().then(items => {
