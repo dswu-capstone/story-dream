@@ -514,14 +514,18 @@ function RealtimeInteractionPage() {
         [
           "JSON으로만 답하라.",
           "[상황] 이 대화는 아이가 동화를 읽는 도중에 잠깐 진행된다.",
+          `실제 아이의 프로필 이름: ${JSON.stringify(configRef.current.childName)}. 동화 속 인물과 구분한다.`,
           `퀴즈: ${activeQuestionRef.current.replace(/\n/g, " ")}`,
           `아이의 대답: ${cleaned}`,
           "[아이에게 공개된 동화 내용 — 처음부터 현재 페이지까지]",
           storyContextRef.current,
           "[행동] 위에 제공된 동화 내용만 근거로 아이의 답이 문맥상 맞는지 판단하라. 표현이 달라도 뜻이 맞으면 정답이다.",
-          "feedback은 유치원생에게 말할 다정한 한두 문장으로 쓰고, 이야기 속 실제 인물이나 사건을 짚어 준 뒤 다시 동화에 집중하도록 격려하라.",
+          "동의어, 조사 생략, 짧은 답변도 핵심 사실이 맞으면 정답이다. 본문과 모순되거나 질문에 답하지 않는 말, 모르겠다는 답은 정답으로 추측하지 않는다.",
+          "feedback은 짧은 두 문장 이내다. 정답이면 맞힌 사실을 확인하고, 오답이면 탓하지 않고 본문에 나온 사실을 알려 준다. 마지막에는 함께 이야기를 이어 읽자고 권한다.",
+          "답변이 불명확하면 틀렸다고 단정하는 말 대신 본문의 사실을 안내한다. 능력이나 성격을 평가하지 않으며 추가 질문을 하지 않는다. feedback에는 이름을 부르는 호칭을 넣지 않는다.",
           "[예외] 아직 읽지 않은 뒤의 사건은 언급하거나 추측하지 말고, 제공되지 않은 인물·사건을 만들지 마라.",
-          '형식: {"correct": true, "feedback": "...", "emotion": "기쁨|슬픔|놀람"}',
+          "correct는 문자열이 아닌 불리언 true 또는 false다. emotion은 기쁨 또는 놀람 중 하나이며 기본은 기쁨이다. 오답이라고 슬픔이나 화남을 표현하지 않는다.",
+          '출력 키는 correct, feedback, emotion만 사용한다. 형식 예: {"correct": true, "feedback": "...", "emotion": "기쁨"}',
         ].join("\n"),
         "judge-json",
       );
@@ -606,10 +610,11 @@ function RealtimeInteractionPage() {
         "",
         `[행동] ${configRef.current.childName}에게 위 내용만으로 바로 답할 수 있는 아주 쉬운 사실 확인 질문을 한 문장으로 만들어라. 가능하면 가장 최근에 읽은 사건을 물어라.`,
         "question에는 질문을 정확히 하나만 넣고 물음표도 하나만 사용하라. 두 가지를 묻거나 연속 질문을 만들지 마라.",
+        "인물, 장소, 행동 중 한 가지만 묻는다. 정답이 본문에 명확히 있고 짧은 말로 답할 수 있어야 한다. 부정형이나 이중 부정, 본문에 없는 이유를 묻지 않는다.",
         "질문 앞뒤에 설명, 인사, 추가 질문을 붙이지 마라.",
-        "질문에는 아이 이름을 한 번 부르고 감정은 기쁨/슬픔/화남/놀람 중 하나를 골라라.",
+        "question에는 이름을 부르는 호칭을 넣지 않는다. 프로필 이름은 화면에서 별도로 붙인다. 등장인물은 질문의 주어나 목적어로만 언급한다. emotion은 기쁨 또는 놀람 중 하나이며 기본은 기쁨이다.",
         "[예외] 아직 읽지 않은 뒤의 전개, 결말, 제공되지 않은 인물이나 사건은 절대 질문하지 마라. 아이의 취향이나 감상처럼 정답을 판정할 수 없는 질문도 피하라.",
-        '형식: {"question": "...", "emotion": "기쁨|슬픔|화남|놀람"}',
+        '출력 키는 question, emotion만 사용한다. 형식 예: {"question": "... ?", "emotion": "기쁨"}',
       ].join("\n"),
       "quiz-json",
     );
@@ -651,7 +656,12 @@ function RealtimeInteractionPage() {
         configRef.current.childName,
         storySnapshot?.storyTitle || storedReadingSession?.storyTitle,
       );
-      const question = normalizeSingleQuestion(data?.question, fallbackQuestion);
+      const questionBody = normalizeSingleQuestion(data?.question, "");
+      // Reject an unexpected opening vocative instead of speaking a character's name to the child.
+      const hasVocative = /^[^\s,!?]{1,30}[아야](?:\s|[,!])/.test(questionBody);
+      const question = questionBody && !hasVocative
+        ? `${callChild(configRef.current.childName)}, ${questionBody}`
+        : fallbackQuestion;
       activeQuestionRef.current = question;
       setBubbleText(question);
       setEmotion(normalizeEmotion(data?.emotion));
@@ -670,12 +680,12 @@ function RealtimeInteractionPage() {
 
     if (tag === "judge-json") {
       const data = parseJsonObject(text);
-      const correct = Boolean(data?.correct);
+      const correct = data?.correct === true;
       const feedback =
         typeof data?.feedback === "string"
           ? data.feedback
-          : `${callChild(configRef.current.childName)}, 대답해 줘서 고마워! 정말 잘했어.`;
-      const nextEmotion = normalizeEmotion(data?.emotion || (correct ? "happy" : "sad"));
+          : `${callChild(configRef.current.childName)}, 대답해 줘서 고마워! 함께 이야기를 이어 읽어 보자.`;
+      const nextEmotion = data?.emotion === "놀람" ? "surprise" : "happy";
 
       setEmotion(nextEmotion);
       setBubbleText(feedback);
