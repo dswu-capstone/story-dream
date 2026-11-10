@@ -208,6 +208,7 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
 
   return (
     <main className={`story-recommend-page${publicView ? " story-recommend-page--public" : " story-recommend-page--member"}`}>
+      <div className="story-garden" aria-hidden="true"><span>☁</span><span>☁</span><i>✦</i></div>
       <Logo />
       {!publicView && <div className="story-recommend-page__profile" ref={menuRef}>
         <button type="button" className="story-recommend-page__profile-toggle" aria-expanded={menuOpen} aria-controls="child-picker" onClick={() => setMenuOpen(!menuOpen)}>
@@ -349,8 +350,20 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
           </div>
         </>
       )}
+      <aside className="story-garden-play" aria-label="동화 정원 놀이">
+        <p>톡톡! 정원 친구들에게 인사해 봐요</p>
+        <div>{["🌼", "🍄", "🐣"].map((icon, index) => <GardenFriend key={icon} icon={icon} index={index} />)}</div>
+      </aside>
     </main>
   );
+}
+
+function GardenFriend({ icon, index }: { icon: string; index: number }) {
+  const [awake, setAwake] = useState(false);
+  return <button type="button" aria-label={`${["꽃", "버섯", "병아리"][index]}에게 인사하기`} aria-pressed={awake} onClick={() => setAwake(previous => !previous)}>
+    <small aria-live="polite">{awake ? ["활짝! 반가워!", "반짝! 마법이야!", "삐약! 같이 읽자!"][index] : ""}</small>
+    <span aria-hidden="true">{awake ? ["🌻", "✨", "🐥"][index] : icon}</span>
+  </button>;
 }
 
 export default StoryRecommendPage;

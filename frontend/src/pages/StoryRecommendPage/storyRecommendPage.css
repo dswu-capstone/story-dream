@@ -234,3 +234,20 @@
   .story-recommend-page__card,
   .story-recommend-page__thumbnail { transition: none; }
 }
+.story-recommend-page { isolation: isolate; position: relative; background: linear-gradient(#e7f7ff, #fffbea 50%, #e0edca); }
+.story-garden { position: absolute; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; }
+.story-garden span { position: absolute; top: 12%; left: -3%; color: white; font-size: clamp(120px, 18vw, 240px); animation: story-drift 8s ease-in-out infinite alternate; }
+.story-garden span:nth-child(2) { left: auto; right: -3%; top: 25%; animation-delay: -4s; }
+.story-garden i { position: absolute; top: 18%; right: 18%; color: #edbc52; font-size: 42px; animation: story-drift 4s ease-in-out infinite alternate; }
+.story-garden::after { content: ''; position: absolute; bottom: -130px; left: -10%; width: 120%; height: 250px; background: #c9e3b5; border-radius: 50% 70% 0 0; }
+.story-garden-play { margin-top: auto; padding-top: 40px; text-align: center; }
+.story-garden-play p { color: #526d40; font-size: 14px; margin-bottom: 28px; }
+.story-garden-play > div { display: flex; justify-content: center; gap: 32px; }
+.story-garden-play button { position: relative; padding: 12px; background: transparent; border: 0; border-radius: 20px; cursor: pointer; }
+.story-garden-play button > span { display: block; font-size: 44px; transition: transform 250ms ease; }
+.story-garden-play button:hover > span, .story-garden-play button[aria-pressed=true] > span { transform: translateY(-8px) rotate(-12deg) scale(1.15); }
+.story-garden-play small { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #476138; background: #fffef4; border-radius: 12px; }
+.story-garden-play small:not(:empty) { padding: 6px 10px; }
+.story-garden-play button:focus-visible { outline: 3px solid #648f4d; outline-offset: 3px; }
+@keyframes story-drift { to { transform: translate(18px, -12px) rotate(5deg); } }
+@media (prefers-reduced-motion: reduce) { .story-garden span, .story-garden i { animation: none; } .story-garden-play button > span { transition: none; } }
