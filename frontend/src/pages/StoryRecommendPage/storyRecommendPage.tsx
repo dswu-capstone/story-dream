@@ -40,6 +40,11 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   const [profileError, setProfileError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [authStatus, setAuthStatus] = useState<"checking" | "guest" | "authenticated">(
+    () => publicView
+      ? (localStorage.getItem("accessToken") ? "checking" : "guest")
+      : "authenticated",
+  );
 
   useEffect(() => {
     if (!publicView) return;
@@ -48,7 +53,12 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
 
     let active = true;
     void getProfiles().then((profiles) => {
-      if (!active || localStorage.getItem("accessToken") !== token) return;
+      if (!active) return;
+      if (localStorage.getItem("accessToken") !== token) {
+        setAuthStatus("guest");
+        return;
+      }
+      setAuthStatus("authenticated");
       const selected = profiles.find(
         (profile) => String(profile.id) === localStorage.getItem("selectedChildId"),
       );
@@ -62,6 +72,7 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
       navigate("/stories/recommend", { replace: true });
     }).catch(() => {
       // 인증 또는 네트워크 오류 시 공개 목록을 유지한다.
+      if (active) setAuthStatus("guest");
     });
 
     return () => { active = false; };
@@ -216,8 +227,12 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
         <img src={profileIcon} alt="" />보호자 로그인
       </button>}
 
-      <h1 className="story-recommend-page__title">
-        {publicView ? "오늘은 어떤 동화를 읽어볼까?" : `${childName}${pageTitleSuffix}`}
+      <h1 className="story-recommend-page__title" aria-live="polite" aria-busy={authStatus === "checking"}>
+        {authStatus === "checking" || (publicView && authStatus === "authenticated")
+          ? "로그인 상태 확인 중..."
+          : authStatus === "guest"
+            ? "오늘은 어떤 동화를 읽어볼까?"
+            : `${childName}${pageTitleSuffix}`}
       </h1>
 
       <div
