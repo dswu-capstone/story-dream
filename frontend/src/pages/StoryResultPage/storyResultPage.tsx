@@ -159,18 +159,14 @@ function StoryResultPage() {
     <main className="story-result-page">
       <Logo />
 
-      <div className="story-progress-footer">
-        <StoryProgressBar
-          currentStep={pageProgress.currentPage}
-          totalSteps={pageProgress.totalPages}
-        />
-      </div>
+
 
       <div className="story-result-page__counter">
         {quizIndex + 1} / {totalQuizzes}
       </div>
 
       <section className="story-result-page__panel">
+        <span className="story-result-page__decoration" aria-hidden="true">{isCorrect ? "\u{1F31F}" : "\u{1F331}"}</span>
         <div className="story-result-page__content">
           <h1 className="story-result-page__title">{titleMessage}</h1>
           <p className="story-result-page__description">{description}</p>
@@ -190,6 +186,12 @@ function StoryResultPage() {
           {isPending ? "처리 중..." : "다음"}
         </button>
       </section>
+      <div className="story-progress-footer">
+        <StoryProgressBar
+          currentStep={pageProgress.currentPage}
+          totalSteps={pageProgress.totalPages}
+        />
+      </div>
     </main>
   );
 }
