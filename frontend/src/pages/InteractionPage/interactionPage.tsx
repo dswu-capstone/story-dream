@@ -73,12 +73,7 @@ function InteractionPage() {
     <main className="interaction-page">
       <Logo />
 
-      <div className="story-progress-footer">
-        <StoryProgressBar
-          currentStep={pageProgress.currentPage}
-          totalSteps={pageProgress.totalPages}
-        />
-      </div>
+
 
       <section className="interaction-page__panel">
         <div className="interaction-page__content">
@@ -110,6 +105,12 @@ function InteractionPage() {
           className="interaction-page__character"
         />
       </section>
+      <div className="story-progress-footer">
+        <StoryProgressBar
+          currentStep={pageProgress.currentPage}
+          totalSteps={pageProgress.totalPages}
+        />
+      </div>
     </main>
   );
 }

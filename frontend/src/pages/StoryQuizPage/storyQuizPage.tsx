@@ -177,14 +177,7 @@ function StoryQuizPage() {
     <main className="story-quiz-page">
       <Logo />
 
-      <div className="story-progress-footer">
-        {pageProgress && (
-          <StoryProgressBar
-            currentStep={pageProgress.currentPage}
-            totalSteps={pageProgress.totalPages}
-          />
-        )}
-      </div>
+
 
       {isLoading && <p className="story-quiz-page__status">퀴즈를 불러오는 중...</p>}
 
@@ -225,6 +218,7 @@ function StoryQuizPage() {
                       }
                       onClick={() => setSelectedAnswer(choice)}
                       disabled={isSubmitting}
+                      aria-pressed={isSelected}
                     >
                       {choice}
                     </button>
@@ -242,6 +236,7 @@ function StoryQuizPage() {
                     }
                     onClick={() => setSelectedAnswer(choice)}
                     disabled={isSubmitting}
+                      aria-pressed={isSelected}
                   >
                     <img
                       src={optionIcons[index] ?? optionIcons[0]}
@@ -272,6 +267,14 @@ function StoryQuizPage() {
           </section>
         </>
       )}
+      <div className="story-progress-footer">
+        {pageProgress && (
+          <StoryProgressBar
+            currentStep={pageProgress.currentPage}
+            totalSteps={pageProgress.totalPages}
+          />
+        )}
+      </div>
     </main>
   );
 }

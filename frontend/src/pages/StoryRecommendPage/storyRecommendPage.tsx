@@ -207,7 +207,7 @@ function StoryRecommendPage({ publicView = false }: { publicView?: boolean }) {
   };
 
   return (
-    <main className={`story-recommend-page${publicView ? " story-recommend-page--public" : " story-recommend-page--member"}`}>
+    <main className="story-recommend-page">
       <div className="story-garden" aria-hidden="true"><span>☁</span><span>☁</span><i>✦</i></div>
       <Logo />
       {!publicView && <div className="story-recommend-page__profile" ref={menuRef}>

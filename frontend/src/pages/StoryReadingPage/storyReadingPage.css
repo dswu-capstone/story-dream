@@ -42,3 +42,4 @@
   .story-reading-page__sentence { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .story-reading-page__control-circle { transition: none; } }
+

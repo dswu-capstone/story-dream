@@ -840,9 +840,7 @@ function RealtimeInteractionPage() {
   return (
     <main className="realtime-interaction-page">
       <Logo />
-      <div className="story-progress-footer">
-        <StoryProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-      </div>
+
 
       <section className="realtime-interaction-page__stage" aria-label="드리미와 동화 퀴즈">
         <div
@@ -937,6 +935,9 @@ function RealtimeInteractionPage() {
       </div>
 
       <audio ref={audioRef} className="realtime-interaction-page__audio" autoPlay />
+      <div className="story-progress-footer">
+        <StoryProgressBar currentStep={currentStep} totalSteps={totalSteps} />
+      </div>
     </main>
   );
 }
