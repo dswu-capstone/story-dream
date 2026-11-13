@@ -310,6 +310,17 @@ const server = http.createServer(async (req, res) => {
       sse.broadcast("quizlog", entry);
       return sendJson(res, 200, { ok: true, entry });
     }
+    if (req.method === "POST" && p === "/api/question") {
+      const body = await readJsonBody(req);
+      if (typeof body.instructions !== "string" || !body.instructions.trim()) {
+        return sendJson(res, 400, { ok: false, error: "Missing question instructions" });
+      }
+      if (!realtime.available) {
+        return sendJson(res, 503, { ok: false, error: "Question generation unavailable" });
+      }
+      const text = await realtime.generateQuestion(body.instructions);
+      return sendJson(res, 200, { ok: true, text });
+    }
     if (req.method === "POST" && p === "/api/call") {
       const body = await readJsonBody(req);
       if (!body.sdp) return sendJson(res, 400, { ok: false, error: "Missing SDP offer" });

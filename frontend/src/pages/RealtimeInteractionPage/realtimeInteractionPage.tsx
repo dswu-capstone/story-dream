@@ -12,6 +12,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import "./realtimeInteractionPage.css";
 
 import {
+  buildJsonInstructions,
+  generateBrowserQuestion,
   getRealtimeReadingState,
   getRealtimeSession,
   parseJsonObject,
@@ -117,6 +119,216 @@ function normalizeSingleQuestion(value: unknown, fallback: string) {
   ).trim();
 
   return singleSentence ? `${singleSentence}?` : fallback;
+}
+
+const browserAnswerStopWords = new Set([
+  "그리고",
+  "그런데",
+  "그냥",
+  "깊",
+  "나",
+  "너",
+  "네",
+  "내",
+  "더",
+  "또",
+  "맞아",
+  "맞아요",
+  "뭐",
+  "무슨",
+  "방금",
+  "분명",
+  "속",
+  "아니",
+  "아니야",
+  "아니요",
+  "어",
+  "응",
+  "예",
+  "이야기",
+  "있다",
+  "있었",
+  "있어",
+  "있는",
+  "있나요",
+  "있었나요",
+  "있는지",
+  "있었는지",
+  "알다",
+  "알았",
+  "알아",
+  "없다",
+  "없어",
+  "없었",
+  "없나요",
+  "어디",
+  "언제",
+  "누가",
+  "누구",
+  "무엇",
+  "왜",
+  "어떻게",
+  "뭐였",
+  "무엇이었",
+  "했나요",
+  "했니",
+  "였나요",
+  "인가요",
+  "일이",
+  "일은",
+  "내용",
+  "장면",
+  "부분",
+  "생각",
+  "말해",
+  "말했",
+  "말할",
+  "말했지",
+  "말해줄",
+  "대답",
+  "정말",
+  "잘",
+  "조금",
+  "다시",
+  "했어",
+  "했어요",
+  "했지",
+  "했죠",
+]);
+
+function normalizeBrowserToken(token: string) {
+  let normalized = token.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  const suffixes = [
+    "이었어요",
+    "였어요",
+    "했어요",
+    "이에요",
+    "예요",
+    "어요",
+    "아요",
+    "었어요",
+    "았어요",
+    "나요",
+    "어요",
+    "아요",
+    "었어",
+    "았어",
+    "었지",
+    "았지",
+    "었니",
+    "았니",
+    "아서",
+    "어서",
+    "니",
+    "했어",
+    "였어",
+    "이었어",
+    "했지",
+    "였지",
+    "하고",
+    "해서",
+    "하며",
+    "으로",
+    "에서",
+    "에게",
+    "부터",
+    "까지",
+    "에는",
+    "은",
+    "는",
+    "이",
+    "가",
+    "을",
+    "를",
+    "에",
+    "도",
+    "의",
+    "로",
+    "와",
+    "과",
+    "랑",
+    "만",
+    "다",
+    "요",
+    "어",
+    "아",
+    "지",
+  ];
+
+  for (const suffix of suffixes) {
+    if (normalized.length > suffix.length + 1 && normalized.endsWith(suffix)) {
+      normalized = normalized.slice(0, -suffix.length);
+      break;
+    }
+  }
+  return normalized;
+}
+
+function getBrowserMeaningfulTokens(text: string) {
+  return text
+    .split(/\s+/)
+    .map(normalizeBrowserToken)
+    .filter(
+      (token) => token.length >= 2 && !browserAnswerStopWords.has(token),
+    );
+}
+
+function gradeBrowserAnswer(
+  question: string,
+  answer: string,
+  context: string,
+  storyTitle = "",
+) {
+  const normalizedAnswer = answer.replace(/[.!?,，。？！]/gu, " ").trim();
+  const answerTokens = getBrowserMeaningfulTokens(normalizedAnswer);
+  const questionTokens = getBrowserMeaningfulTokens(question);
+  const titleTokens = getBrowserMeaningfulTokens(storyTitle);
+  const storySentences = context
+    .split(/\r?\n+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+  const storyTokens = new Set(getBrowserMeaningfulTokens(context));
+  const isUncertainAnswer = /모르겠|몰라|기억이 안|잘 모르/gu.test(normalizedAnswer);
+  const isTitleQuestion = /무슨 동화|동화 제목|제목|어떤 동화/u.test(question);
+  const isAffirmativeAnswer = /^(응|네|예|맞아|맞아요|그랬어|그랬어요|그래)$/u.test(
+    normalizedAnswer,
+  );
+
+  let correct = false;
+  if (!isUncertainAnswer && isTitleQuestion && titleTokens.length > 0) {
+    correct = titleTokens.every((token) => answerTokens.includes(token));
+  } else if (!isUncertainAnswer && isAffirmativeAnswer) {
+    // 긍정형 답변은 질문의 핵심 내용이 실제 본문에 모두 있을 때만 인정한다.
+    correct =
+      questionTokens.length > 0 &&
+      questionTokens.every((token) => storyTokens.has(token));
+  } else if (!isUncertainAnswer) {
+    const matchedAnswerTokens = answerTokens.filter((token) =>
+      storyTokens.has(token),
+    );
+    correct = matchedAnswerTokens.length > 0;
+  }
+
+  const scoredSentence = [...storySentences]
+    .map((sentence, index) => {
+      const sentenceTokens = new Set(getBrowserMeaningfulTokens(sentence));
+      const answerScore = answerTokens.filter((token) =>
+        sentenceTokens.has(token),
+      ).length;
+      const questionScore = questionTokens.filter((token) =>
+        sentenceTokens.has(token),
+      ).length;
+      return { sentence, index, score: answerScore * 2 + questionScore };
+    })
+    .sort((first, second) => second.score - first.score || first.index - second.index)[0];
+
+  const referenceSentence = isTitleQuestion && storyTitle
+    ? `이 동화의 제목은 「${storyTitle}」야.`
+    : scoredSentence?.score
+      ? scoredSentence.sentence
+      : undefined;
+
+  return { correct, referenceSentence };
 }
 
 function getPageSentences(pages: StoryPage[]) {
@@ -297,6 +509,7 @@ function RealtimeInteractionPage() {
   const audioPlaybackStartedRef = useRef(false);
   const interactionStartInFlightRef = useRef(false);
   const questionGenerationInFlightRef = useRef(false);
+  const browserQuestionRequestRef = useRef<AbortController | null>(null);
 
   const updatePhase = (next: InteractionPhase) => {
     phaseRef.current = next;
@@ -421,6 +634,7 @@ function RealtimeInteractionPage() {
       window.clearTimeout(prepareTimer);
       clearTimers();
       recognitionRef.current?.stop();
+      browserQuestionRequestRef.current?.abort();
       clientRef.current?.close();
       window.speechSynthesis?.cancel();
     };
@@ -522,7 +736,17 @@ function RealtimeInteractionPage() {
       return;
     }
 
-    const feedback = `${callChild(configRef.current.childName)}, 대답해 줘서 고마워! 네 생각을 정말 잘 말해 주었어.`;
+    const browserGrade = gradeBrowserAnswer(
+      activeQuestionRef.current,
+      cleaned,
+      storyContextRef.current,
+      storySnapshot?.storyTitle || storedReadingSession?.storyTitle || "",
+    );
+    const feedback = browserGrade.correct
+      ? "맞았어! 지금까지 읽은 내용을 잘 기억했네. 함께 다음 이야기도 읽어 보자!"
+      : browserGrade.referenceSentence
+        ? `괜찮아, 아쉽지만 정답과는 조금 달라. 정답은 이렇게 나와 있었어: ${browserGrade.referenceSentence} 다시 떠올려 보면서 다음 이야기도 함께 읽어 보자!`
+        : "괜찮아, 아직 헷갈릴 수 있어. 정답은 지금까지 읽은 이야기 속에 있어. 함께 다시 떠올려 보자!";
     window.setTimeout(() => {
       setEmotion("happy");
       setBubbleText(feedback);
@@ -530,9 +754,21 @@ function RealtimeInteractionPage() {
       setStatusText("드리미가 대답하고 있어요.");
       speakWithBrowser(feedback, () => {
         updatePhase("complete");
-        setStatusText("멋지게 대답했어요! 동화로 돌아가도 좋아요.");
+        setStatusText(
+          browserGrade.correct
+            ? "정답이에요. 동화로 돌아가도 좋아요."
+            : "이야기 내용을 다시 떠올려 봤어요. 동화로 돌아가도 좋아요.",
+        );
       });
     }, 450);
+    void saveRealtimeQuizLog({
+      question: activeQuestionRef.current,
+      answer: cleaned,
+      correct: browserGrade.correct,
+      emotion: "happy",
+      feedback,
+      source: "stories-interaction-page-browser",
+    });
   };
 
   const startBrowserRecognition = () => {
@@ -564,13 +800,68 @@ function RealtimeInteractionPage() {
     }
   };
 
-  const startBrowserInteraction = () => {
+  const buildQuestionPrompt = () =>
+    [
+      "JSON으로만 답하라.",
+      "[상황] 이 대화는 아이가 동화를 읽는 도중에 잠깐 진행된다.",
+      `동화 제목: ${storySnapshot?.storyTitle || storedReadingSession?.storyTitle || "동화"}`,
+      `현재 위치: ${storySnapshot?.partType || "현재 부분"} ${storySnapshot?.currentPageNumber || 1}페이지`,
+      "[아이에게 공개된 동화 내용 — 처음부터 현재 페이지까지, 시간 순서]",
+      storyContextRef.current,
+      "",
+      `[행동] ${configRef.current.childName}에게 위 내용만으로 바로 답할 수 있는 아주 쉬운 사실 확인 질문을 한 문장으로 만들어라. 가능하면 가장 최근에 읽은 사건을 물어라.`,
+      "question에는 질문을 정확히 하나만 넣고 물음표도 하나만 사용하라. 두 가지를 묻거나 연속 질문을 만들지 마라.",
+      "인물, 장소, 행동 중 한 가지만 묻는다. 정답이 본문에 명확히 있고 짧은 말로 답할 수 있어야 한다. 부정형이나 이중 부정, 본문에 없는 이유를 묻지 않는다.",
+      "질문 앞뒤에 설명, 인사, 추가 질문을 붙이지 마라.",
+      "question에는 이름을 부르는 호칭을 넣지 않는다. 프로필 이름은 화면에서 별도로 붙인다. 등장인물은 질문의 주어나 목적어로만 언급한다. emotion은 기쁨 또는 놀람 중 하나이며 기본은 기쁨이다.",
+      "[예외] 아직 읽지 않은 뒤의 전개, 결말, 제공되지 않은 인물이나 사건은 절대 질문하지 마라. 아이의 취향이나 감상처럼 정답을 판정할 수 없는 질문도 피하라.",
+      '출력 키는 question, emotion만 사용한다. 형식 예: {"question": "... ?", "emotion": "기쁨"}',
+    ].join("\n");
+
+  const resolveGeneratedQuestion = (data: Record<string, unknown> | null) => {
+    const fallbackQuestion = makeDefaultQuestion(
+      configRef.current.childName,
+      storySnapshot?.storyTitle || storedReadingSession?.storyTitle,
+    );
+    const questionBody = normalizeSingleQuestion(data?.question, "");
+    // Reject an unexpected opening vocative instead of speaking a character's name to the child.
+    const hasVocative = /^[^\s,!?]{1,30}[아야](?:\s|[,!])/.test(questionBody);
+    return questionBody && !hasVocative
+      ? `${callChild(configRef.current.childName)}, ${questionBody}`
+      : fallbackQuestion;
+  };
+
+  const startBrowserInteraction = async () => {
     updateMode("browser");
+    updatePhase("thinking");
+    setEmotion("thinking");
+    setStatusText("방금 읽은 이야기에서 질문을 만들고 있어요.");
+    const controller = new AbortController();
+    browserQuestionRequestRef.current?.abort();
+    browserQuestionRequestRef.current = controller;
+    let question = resolveGeneratedQuestion(null);
+    let nextEmotion: DreamyEmotionName = "happy";
+    try {
+      const instructions = buildJsonInstructions(buildQuestionPrompt(), {
+        childName: configRef.current.childName,
+        storyTitle: storySnapshot?.storyTitle || storedReadingSession?.storyTitle || "동화",
+      });
+      const result = await generateBrowserQuestion(instructions, controller.signal);
+      const data = parseJsonObject(result.text);
+      question = resolveGeneratedQuestion(data);
+      nextEmotion = normalizeEmotion(data?.emotion);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      console.warn("Browser question generation failed:", error);
+    }
+    if (controller.signal.aborted) return;
+    browserQuestionRequestRef.current = null;
+    activeQuestionRef.current = question;
     updatePhase("asking");
-    setEmotion("happy");
-    setBubbleText(activeQuestionRef.current);
+    setEmotion(nextEmotion);
+    setBubbleText(question);
     setStatusText("드리미가 질문하고 있어요.");
-    speakWithBrowser(activeQuestionRef.current, startBrowserRecognition);
+    speakWithBrowser(question, startBrowserRecognition);
   };
 
   const askRealtimeQuestion = () => {
@@ -590,22 +881,7 @@ function RealtimeInteractionPage() {
     setBubbleText(`${callChild(configRef.current.childName)}, 질문을 생각하고 있어!`);
     setStatusText("방금 읽은 이야기에서 질문을 만들고 있어요.");
     const requested = client.requestJson(
-      [
-        "JSON으로만 답하라.",
-        "[상황] 이 대화는 아이가 동화를 읽는 도중에 잠깐 진행된다.",
-        `동화 제목: ${storySnapshot?.storyTitle || storedReadingSession?.storyTitle || "동화"}`,
-        `현재 위치: ${storySnapshot?.partType || "현재 부분"} ${storySnapshot?.currentPageNumber || 1}페이지`,
-        "[아이에게 공개된 동화 내용 — 처음부터 현재 페이지까지, 시간 순서]",
-        storyContextRef.current,
-        "",
-        `[행동] ${configRef.current.childName}에게 위 내용만으로 바로 답할 수 있는 아주 쉬운 사실 확인 질문을 한 문장으로 만들어라. 가능하면 가장 최근에 읽은 사건을 물어라.`,
-        "question에는 질문을 정확히 하나만 넣고 물음표도 하나만 사용하라. 두 가지를 묻거나 연속 질문을 만들지 마라.",
-        "인물, 장소, 행동 중 한 가지만 묻는다. 정답이 본문에 명확히 있고 짧은 말로 답할 수 있어야 한다. 부정형이나 이중 부정, 본문에 없는 이유를 묻지 않는다.",
-        "질문 앞뒤에 설명, 인사, 추가 질문을 붙이지 마라.",
-        "question에는 이름을 부르는 호칭을 넣지 않는다. 프로필 이름은 화면에서 별도로 붙인다. 등장인물은 질문의 주어나 목적어로만 언급한다. emotion은 기쁨 또는 놀람 중 하나이며 기본은 기쁨이다.",
-        "[예외] 아직 읽지 않은 뒤의 전개, 결말, 제공되지 않은 인물이나 사건은 절대 질문하지 마라. 아이의 취향이나 감상처럼 정답을 판정할 수 없는 질문도 피하라.",
-        '출력 키는 question, emotion만 사용한다. 형식 예: {"question": "... ?", "emotion": "기쁨"}',
-      ].join("\n"),
+      buildQuestionPrompt(),
       "quiz-json",
     );
 
@@ -642,16 +918,7 @@ function RealtimeInteractionPage() {
     if (tag === "quiz-json") {
       questionGenerationInFlightRef.current = false;
       const data = parseJsonObject(text);
-      const fallbackQuestion = makeDefaultQuestion(
-        configRef.current.childName,
-        storySnapshot?.storyTitle || storedReadingSession?.storyTitle,
-      );
-      const questionBody = normalizeSingleQuestion(data?.question, "");
-      // Reject an unexpected opening vocative instead of speaking a character's name to the child.
-      const hasVocative = /^[^\s,!?]{1,30}[아야](?:\s|[,!])/.test(questionBody);
-      const question = questionBody && !hasVocative
-        ? `${callChild(configRef.current.childName)}, ${questionBody}`
-        : fallbackQuestion;
+      const question = resolveGeneratedQuestion(data);
       activeQuestionRef.current = question;
       setBubbleText(question);
       setEmotion(normalizeEmotion(data?.emotion));
@@ -718,7 +985,7 @@ function RealtimeInteractionPage() {
         return;
       }
       if (!realtimeAvailableRef.current || !audioRef.current) {
-        startBrowserInteraction();
+        await startBrowserInteraction();
         return;
       }
 
@@ -754,7 +1021,7 @@ function RealtimeInteractionPage() {
         clientRef.current = null;
         setAnalyser(null);
         setStatusText("브라우저 음성으로 이어서 시작할게요.");
-        startBrowserInteraction();
+        await startBrowserInteraction();
       }
     } finally {
       interactionStartInFlightRef.current = false;
@@ -787,6 +1054,7 @@ function RealtimeInteractionPage() {
   };
 
   const continueStory = () => {
+    browserQuestionRequestRef.current?.abort();
     clearTimers();
     recognitionRef.current?.stop();
     clientRef.current?.close();

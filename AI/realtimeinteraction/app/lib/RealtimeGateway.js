@@ -80,6 +80,29 @@ class RealtimeGateway {
 
     return { sdp: text, session };
   }
+
+  async generateQuestion(instructions) {
+    if (!this.apiKey) throw new Error("OPENAI_API_KEY is not set");
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "system", content: instructions }],
+        response_format: { type: "json_object" },
+        max_tokens: 300
+      }),
+      signal: AbortSignal.timeout(15000)
+    });
+    if (!response.ok) throw new Error(`Question generation failed with status ${response.status}`);
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
+    if (typeof text !== "string" || !text.trim()) throw new Error("Empty question response");
+    return text;
+  }
 }
 
 module.exports = { RealtimeGateway };
