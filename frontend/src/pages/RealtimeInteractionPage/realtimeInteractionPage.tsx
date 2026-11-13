@@ -12,6 +12,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import "./realtimeInteractionPage.css";
 
 import {
+  buildJsonInstructions,
+  generateBrowserQuestion,
   getRealtimeReadingState,
   getRealtimeSession,
   parseJsonObject,
@@ -507,6 +509,7 @@ function RealtimeInteractionPage() {
   const audioPlaybackStartedRef = useRef(false);
   const interactionStartInFlightRef = useRef(false);
   const questionGenerationInFlightRef = useRef(false);
+  const browserQuestionRequestRef = useRef<AbortController | null>(null);
 
   const updatePhase = (next: InteractionPhase) => {
     phaseRef.current = next;
@@ -631,6 +634,7 @@ function RealtimeInteractionPage() {
       window.clearTimeout(prepareTimer);
       clearTimers();
       recognitionRef.current?.stop();
+      browserQuestionRequestRef.current?.abort();
       clientRef.current?.close();
       window.speechSynthesis?.cancel();
     };
@@ -796,13 +800,68 @@ function RealtimeInteractionPage() {
     }
   };
 
-  const startBrowserInteraction = () => {
+  const buildQuestionPrompt = () =>
+    [
+      "JSON으로만 답하라.",
+      "[상황] 이 대화는 아이가 동화를 읽는 도중에 잠깐 진행된다.",
+      `동화 제목: ${storySnapshot?.storyTitle || storedReadingSession?.storyTitle || "동화"}`,
+      `현재 위치: ${storySnapshot?.partType || "현재 부분"} ${storySnapshot?.currentPageNumber || 1}페이지`,
+      "[아이에게 공개된 동화 내용 — 처음부터 현재 페이지까지, 시간 순서]",
+      storyContextRef.current,
+      "",
+      `[행동] ${configRef.current.childName}에게 위 내용만으로 바로 답할 수 있는 아주 쉬운 사실 확인 질문을 한 문장으로 만들어라. 가능하면 가장 최근에 읽은 사건을 물어라.`,
+      "question에는 질문을 정확히 하나만 넣고 물음표도 하나만 사용하라. 두 가지를 묻거나 연속 질문을 만들지 마라.",
+      "인물, 장소, 행동 중 한 가지만 묻는다. 정답이 본문에 명확히 있고 짧은 말로 답할 수 있어야 한다. 부정형이나 이중 부정, 본문에 없는 이유를 묻지 않는다.",
+      "질문 앞뒤에 설명, 인사, 추가 질문을 붙이지 마라.",
+      "question에는 이름을 부르는 호칭을 넣지 않는다. 프로필 이름은 화면에서 별도로 붙인다. 등장인물은 질문의 주어나 목적어로만 언급한다. emotion은 기쁨 또는 놀람 중 하나이며 기본은 기쁨이다.",
+      "[예외] 아직 읽지 않은 뒤의 전개, 결말, 제공되지 않은 인물이나 사건은 절대 질문하지 마라. 아이의 취향이나 감상처럼 정답을 판정할 수 없는 질문도 피하라.",
+      '출력 키는 question, emotion만 사용한다. 형식 예: {"question": "... ?", "emotion": "기쁨"}',
+    ].join("\n");
+
+  const resolveGeneratedQuestion = (data: Record<string, unknown> | null) => {
+    const fallbackQuestion = makeDefaultQuestion(
+      configRef.current.childName,
+      storySnapshot?.storyTitle || storedReadingSession?.storyTitle,
+    );
+    const questionBody = normalizeSingleQuestion(data?.question, "");
+    // Reject an unexpected opening vocative instead of speaking a character's name to the child.
+    const hasVocative = /^[^\s,!?]{1,30}[아야](?:\s|[,!])/.test(questionBody);
+    return questionBody && !hasVocative
+      ? `${callChild(configRef.current.childName)}, ${questionBody}`
+      : fallbackQuestion;
+  };
+
+  const startBrowserInteraction = async () => {
     updateMode("browser");
+    updatePhase("thinking");
+    setEmotion("thinking");
+    setStatusText("방금 읽은 이야기에서 질문을 만들고 있어요.");
+    const controller = new AbortController();
+    browserQuestionRequestRef.current?.abort();
+    browserQuestionRequestRef.current = controller;
+    let question = resolveGeneratedQuestion(null);
+    let nextEmotion: DreamyEmotionName = "happy";
+    try {
+      const instructions = buildJsonInstructions(buildQuestionPrompt(), {
+        childName: configRef.current.childName,
+        storyTitle: storySnapshot?.storyTitle || storedReadingSession?.storyTitle || "동화",
+      });
+      const result = await generateBrowserQuestion(instructions, controller.signal);
+      const data = parseJsonObject(result.text);
+      question = resolveGeneratedQuestion(data);
+      nextEmotion = normalizeEmotion(data?.emotion);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      console.warn("Browser question generation failed:", error);
+    }
+    if (controller.signal.aborted) return;
+    browserQuestionRequestRef.current = null;
+    activeQuestionRef.current = question;
     updatePhase("asking");
-    setEmotion("happy");
-    setBubbleText(activeQuestionRef.current);
+    setEmotion(nextEmotion);
+    setBubbleText(question);
     setStatusText("드리미가 질문하고 있어요.");
-    speakWithBrowser(activeQuestionRef.current, startBrowserRecognition);
+    speakWithBrowser(question, startBrowserRecognition);
   };
 
   const askRealtimeQuestion = () => {
@@ -822,22 +881,7 @@ function RealtimeInteractionPage() {
     setBubbleText(`${callChild(configRef.current.childName)}, 질문을 생각하고 있어!`);
     setStatusText("방금 읽은 이야기에서 질문을 만들고 있어요.");
     const requested = client.requestJson(
-      [
-        "JSON으로만 답하라.",
-        "[상황] 이 대화는 아이가 동화를 읽는 도중에 잠깐 진행된다.",
-        `동화 제목: ${storySnapshot?.storyTitle || storedReadingSession?.storyTitle || "동화"}`,
-        `현재 위치: ${storySnapshot?.partType || "현재 부분"} ${storySnapshot?.currentPageNumber || 1}페이지`,
-        "[아이에게 공개된 동화 내용 — 처음부터 현재 페이지까지, 시간 순서]",
-        storyContextRef.current,
-        "",
-        `[행동] ${configRef.current.childName}에게 위 내용만으로 바로 답할 수 있는 아주 쉬운 사실 확인 질문을 한 문장으로 만들어라. 가능하면 가장 최근에 읽은 사건을 물어라.`,
-        "question에는 질문을 정확히 하나만 넣고 물음표도 하나만 사용하라. 두 가지를 묻거나 연속 질문을 만들지 마라.",
-        "인물, 장소, 행동 중 한 가지만 묻는다. 정답이 본문에 명확히 있고 짧은 말로 답할 수 있어야 한다. 부정형이나 이중 부정, 본문에 없는 이유를 묻지 않는다.",
-        "질문 앞뒤에 설명, 인사, 추가 질문을 붙이지 마라.",
-        "question에는 이름을 부르는 호칭을 넣지 않는다. 프로필 이름은 화면에서 별도로 붙인다. 등장인물은 질문의 주어나 목적어로만 언급한다. emotion은 기쁨 또는 놀람 중 하나이며 기본은 기쁨이다.",
-        "[예외] 아직 읽지 않은 뒤의 전개, 결말, 제공되지 않은 인물이나 사건은 절대 질문하지 마라. 아이의 취향이나 감상처럼 정답을 판정할 수 없는 질문도 피하라.",
-        '출력 키는 question, emotion만 사용한다. 형식 예: {"question": "... ?", "emotion": "기쁨"}',
-      ].join("\n"),
+      buildQuestionPrompt(),
       "quiz-json",
     );
 
@@ -874,16 +918,7 @@ function RealtimeInteractionPage() {
     if (tag === "quiz-json") {
       questionGenerationInFlightRef.current = false;
       const data = parseJsonObject(text);
-      const fallbackQuestion = makeDefaultQuestion(
-        configRef.current.childName,
-        storySnapshot?.storyTitle || storedReadingSession?.storyTitle,
-      );
-      const questionBody = normalizeSingleQuestion(data?.question, "");
-      // Reject an unexpected opening vocative instead of speaking a character's name to the child.
-      const hasVocative = /^[^\s,!?]{1,30}[아야](?:\s|[,!])/.test(questionBody);
-      const question = questionBody && !hasVocative
-        ? `${callChild(configRef.current.childName)}, ${questionBody}`
-        : fallbackQuestion;
+      const question = resolveGeneratedQuestion(data);
       activeQuestionRef.current = question;
       setBubbleText(question);
       setEmotion(normalizeEmotion(data?.emotion));
@@ -950,7 +985,7 @@ function RealtimeInteractionPage() {
         return;
       }
       if (!realtimeAvailableRef.current || !audioRef.current) {
-        startBrowserInteraction();
+        await startBrowserInteraction();
         return;
       }
 
@@ -986,7 +1021,7 @@ function RealtimeInteractionPage() {
         clientRef.current = null;
         setAnalyser(null);
         setStatusText("브라우저 음성으로 이어서 시작할게요.");
-        startBrowserInteraction();
+        await startBrowserInteraction();
       }
     } finally {
       interactionStartInFlightRef.current = false;
@@ -1019,6 +1054,7 @@ function RealtimeInteractionPage() {
   };
 
   const continueStory = () => {
+    browserQuestionRequestRef.current?.abort();
     clearTimers();
     recognitionRef.current?.stop();
     clientRef.current?.close();
