@@ -2,8 +2,8 @@
 
 ### YOLO-Pose와 LLM을 활용한 라즈베리파이 기반 인터랙티브 동화 서비스
 
-**StoryDream**은 5~7세 아동을 위한 AI 기반 맞춤형 동화 서비스입니다. <a href="https://www.youtube.com/watch?v=QfPyULg7yuI"> ( 시연 영상 )
-</a>
+**StoryDream**은 5~7세 아동을 위한 AI 기반 맞춤형 동화 서비스입니다. (<a href="https://www.youtube.com/watch?v=QfPyULg7yuI"> 시연 영상
+</a>)
 
 ![StoryDream](docs/images/StoryDream사진.png)
 
