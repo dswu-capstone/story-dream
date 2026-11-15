@@ -10,6 +10,7 @@
 기존 전자책의 단방향 독서 방식에서 벗어나, 아동의 **관심사 / 이해도 / 집중 상태**를 반영하여 능동적인 독서 경험을 제공합니다.
 
 YOLO-Pose 기반 실시간 집중도 감지, LLM 기반 난이도 조절, 음성 상호작용을 통해 아동의 독서 몰입을 유도하고, 보호자에게 AI 독서 분석 리포트를 제공합니다.
+<br>
 
 
 <h2>👥 팀원</h2>
@@ -34,6 +35,8 @@ YOLO-Pose 기반 실시간 집중도 감지, LLM 기반 난이도 조절, 음성
 | 🎤 실시간 음성 상호작용 | 집중 이탈 시 AI 캐릭터가 동화 관련 질문을 생성하고 아동의 답변에 반응   |
 | 📊 AI 독서 리포트       | 독서 이력, 퀴즈 정답률, 난이도 변화, 집중도 데이터를 종합한 분석 리포트 |
 
+<br>
+
 ## 🛠 기술 스택
 
 | 구분           | 기술                                                       |
@@ -46,6 +49,8 @@ YOLO-Pose 기반 실시간 집중도 감지, LLM 기반 난이도 조절, 음성
 | Infrastructure | AWS EC2, RDS, S3, Docker, Nginx, GitHub Actions, Vercel    |
 | Hardware       | Raspberry Pi 4, Webcam, Speaker, LED, Encoder              |
 
+<br>
+
 ## 🏗 시스템 구성
 
 StoryDream은 **React 클라이언트, Spring Boot 백엔드, FastAPI 기반 AI 서버, 라즈베리파이 하드웨어**로 구성됩니다.
@@ -56,6 +61,8 @@ StoryDream은 **React 클라이언트, Spring Boot 백엔드, FastAPI 기반 AI 
 - **Realtime AI:** YOLO-Pose 기반 집중도 감지 및 실시간 음성 상호작용
 - **Hardware:** 라즈베리파이 기반, LED 및 엔코더를 활용한 인터랙션
 - **Infrastructure:** AWS 기반 데이터 저장 및 서버 운영
+
+<br>
 
 ## 🚀 핵심 기술 및 성과
 
@@ -74,6 +81,7 @@ StoryDream은 **React 클라이언트, Spring Boot 백엔드, FastAPI 기반 AI 
 - 최근 8회 판정 결과를 활용한 오탐 완화
 - 집중 이탈이 10초 이상 지속되면 음성 상호작용 실행
 
+<br>
 
 ## 🏗 시스템 구성도
 
@@ -84,6 +92,8 @@ StoryDream은 **React 클라이언트, Spring Boot 백엔드, FastAPI 기반 AI 
 - **AI Server:** 맞춤형 동화 추천, 난이도 조절, AI 리포트 생성
 - **Realtime AI:** YOLO 기반 집중도 감지 및 실시간 음성 상호작용
 - **Infrastructure:** AWS 기반 데이터 저장 및 서버 운영
+
+<br>
 
 ## 📁 프로젝트 구조
 
