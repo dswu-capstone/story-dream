@@ -2,7 +2,8 @@
 
 ### YOLO-Pose와 LLM을 활용한 라즈베리파이 기반 인터랙티브 동화 서비스
 
-**StoryDream**은 5~7세 아동을 위한 AI 기반 맞춤형 동화 서비스입니다.
+**StoryDream**은 5~7세 아동을 위한 AI 기반 맞춤형 동화 서비스입니다. <a href="https://www.youtube.com/watch?v=QfPyULg7yuI"> ( 시연 영상 )
+</a>
 
 ![StoryDream](docs/images/StoryDream사진.png)
 
@@ -11,13 +12,17 @@
 YOLO-Pose 기반 실시간 집중도 감지, LLM 기반 난이도 조절, 음성 상호작용을 통해 아동의 독서 몰입을 유도하고, 보호자에게 AI 독서 분석 리포트를 제공합니다.
 
 
-## 🎥 시연 영상
-https://www.youtube.com/watch?v=QfPyULg7yuI
-<a href="https://www.youtube.com/watch?v=QfPyULg7yuI">
-  <img src="https://img.youtube.com/vi/QfPyULg7yuI/hqdefault.jpg"
-       width="600"
-       alt="StoryDream 시연 영상"/>
-</a>
+<h2>👥 팀원</h2>
+
+- **프로젝트 기간 : 2026.04 - 2026.11 (7개월)**
+
+| 담당자 | 역할 | 주요 업무 |
+| :----: | :--: | --------- |
+| <a href="https://github.com/eunkyoung529"><img src="https://github.com/eunkyoung529.png" alt="김은경" width="140" height="140"></a><br>[김은경](https://github.com/eunkyoung529) | PM<br>AI/BE/HW | StoryDream 기획<br>SDXL LoRA fine tuning 및 이미지 동화 삽화 생성<br>LLM LoRA fine tuning 및 단계별 동화데이터 생성<br>집중도 여부 판단 Yolo-Pose 파이프라인 구축<br>실시간 상호작용 모듈 개발 및 개선<br>회원가입/로그인 구현<br>FastAPI AI 서버 구축 및 LLM 기반 독서 리포트 생성 기능 구현<br>HW-SW 연동<br>라즈베리파이 환경 구축 및 하드웨어 LED, 엔코더 기능 구현|
+| <a href="https://github.com/Arin0303"><img src="https://github.com/Arin0303.png" alt="남아린" width="140" height="140"></a><br>[남아린](https://github.com/Arin0303) | FE/BE/Infra | 동화 읽기, 퀴즈, 아동 프로필 등 핵심 API 개발<br>아동 수준별 난이도 계산 로직 구현<br>추천 시스템 연동 및 캐시 적용<br>시작, 로그인, 아동 관리, 리포트 화면 등 프론트엔드 개발<br>디자인, UI/UX 구현<br>Docker, AWS S3, CI/CD 배포 환경 구축<br>라즈베리파이-백엔드 통신 구현 |
+| <a href="https://github.com/hyunsun276"><img src="https://github.com/hyunsun276.png" alt="유현선" width="140" height="140"></a><br>[유현선](https://github.com/hyunsun276) | FE/AI | 프론트엔드 초기 환경 구축<br>동화 추천, 동화 읽기, 퀴즈, 상호작용 화면 개발<br>관심사 추출 및 행동 기반 추천 파이프라인 및 오프라인 평가 구현<br>화면 이탈 감지 기반 상호작용 흐름 구현<br>소셜 로그인 프론트엔드 구현 |
+<br>
+
 
 ## ✨ 주요 기능
 
@@ -69,6 +74,17 @@ StoryDream은 **React 클라이언트, Spring Boot 백엔드, FastAPI 기반 AI 
 - 최근 8회 판정 결과를 활용한 오탐 완화
 - 집중 이탈이 10초 이상 지속되면 음성 상호작용 실행
 
+
+## 🏗 시스템 구성도
+
+![시스템 구성도](docs/images/architecture.png)
+
+- **Frontend:** 동화 탐색 및 읽기, 아동 프로필 관리, 퀴즈, 독서 리포트 UI
+- **Backend:** 사용자 인증, 동화 및 독서 이력 관리, 추천·퀴즈 API
+- **AI Server:** 맞춤형 동화 추천, 난이도 조절, AI 리포트 생성
+- **Realtime AI:** YOLO 기반 집중도 감지 및 실시간 음성 상호작용
+- **Infrastructure:** AWS 기반 데이터 저장 및 서버 운영
+
 ## 📁 프로젝트 구조
 
 ```text
@@ -80,24 +96,3 @@ story-dream/
 ├── .github/           # GitHub Actions 워크플로
 └── docker-compose.yml # 컨테이너 실행 설정
 ```
-## 🏗 시스템 구성도
-
-![시스템 구성도](docs/images/architecture.png)
-
-- **Frontend:** 동화 탐색 및 읽기, 아동 프로필 관리, 퀴즈, 독서 리포트 UI
-- **Backend:** 사용자 인증, 동화 및 독서 이력 관리, 추천·퀴즈 API
-- **AI Server:** 맞춤형 동화 추천, 난이도 조절, AI 리포트 생성
-- **Realtime AI:** YOLO 기반 집중도 감지 및 실시간 음성 상호작용
-- **Infrastructure:** AWS 기반 데이터 저장 및 서버 운영
-  
-
-<h2>👥 팀원</h2>
-
-- **프로젝트 기간 : 2026.04 - 2026.11**
-
-| 담당자 | 역할 | 주요 업무 |
-| :----: | :--: | --------- |
-| <a href="https://github.com/eunkyoung529"><img src="https://github.com/eunkyoung529.png" alt="김은경" width="140" height="140"></a><br>[김은경](https://github.com/eunkyoung529) | PM<br>AI/BE/HW | StoryDream 기획<br>SDXL LoRA fine tuning 및 이미지 동화 삽화 생성<br>LLM LoRA fine tuning 및 단계별 동화데이터 생성<br>집중도 여부 판단 Yolo-Pose 파이프라인 구축<br>실시간 상호작용 모듈 개발 및 개선<br>회원가입/로그인 구현<br>FastAPI AI 서버 구축 및 LLM 기반 독서 리포트 생성 기능 구현<br>HW-SW 연동<br>라즈베리파이 환경 구축 및 하드웨어 LED, 엔코더 기능 구현|
-| <a href="https://github.com/Arin0303"><img src="https://github.com/Arin0303.png" alt="남아린" width="140" height="140"></a><br>[남아린](https://github.com/Arin0303) | FE/BE/Infra | 동화 읽기, 퀴즈, 아동 프로필 등 핵심 API 개발<br>아동 수준별 난이도 계산 로직 구현<br>추천 시스템 연동 및 캐시 적용<br>시작, 로그인, 아동 관리, 리포트 화면 등 프론트엔드 개발<br>디자인, UI/UX 구현<br>Docker, AWS S3, CI/CD 배포 환경 구축<br>라즈베리파이-백엔드 통신 구현 |
-| <a href="https://github.com/hyunsun276"><img src="https://github.com/hyunsun276.png" alt="유현선" width="140" height="140"></a><br>[유현선](https://github.com/hyunsun276) | FE/AI | 프론트엔드 초기 환경 구축<br>동화 추천, 동화 읽기, 퀴즈, 상호작용 화면 개발<br>관심사 추출 및 행동 기반 추천 파이프라인 및 오프라인 평가 구현<br>화면 이탈 감지 기반 상호작용 흐름 구현<br>소셜 로그인 프론트엔드 구현 |
-<br>
